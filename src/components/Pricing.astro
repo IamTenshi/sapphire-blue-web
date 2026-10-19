@@ -1,0 +1,99 @@
+---
+import PlanBuilder from './PlanBuilder.astro';
+import PlanCard from './PlanCard.astro';
+---
+<section id="plans" class="wrap sec">
+  <div class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))] [gap:40px] [align-items:end] [margin-bottom:clamp(40px,5vw,64px)]">
+    <div data-reveal class="[display:flex] [flex-direction:column] [gap:20px] [align-items:flex-start]">
+      <div class="eyebrow">Plans</div>
+      <h2 class="h2">Simple monthly pricing, <span class="hl" data-hl>tools included.</span></h2>
+      <p class="lead [max-width:480px]">Monthly plans in USD with the tools already included. Pick the level that fits where your business is today.</p>
+      <div role="tablist" style="background:rgba(11,27,58,.06)" class="[display:inline-flex] [gap:4px] [padding:5px] [border-radius:16px] [margin-top:8px]">
+        <button role="tab" class="tab" data-tabbtn="social" aria-selected="true">Social media</button>
+        <button role="tab" class="tab" data-tabbtn="email" aria-selected="false">Email marketing</button>
+      </div>
+    </div>
+    <div data-reveal aria-hidden="true" class="[display:flex] [justify-content:center] [align-items:flex-end] [height:260px] [overflow:hidden] [position:relative]">
+      <div data-pane="social" class="[display:contents]">
+        <div style="background:#fff;border-bottom:0" class="[position:relative] [width:250px] [height:260px] [margin-bottom:-60px] [border:9px_solid_#0B1B3A] [border-radius:38px_38px_0_0] [padding:22px_14px_0] [transform:rotate(-3deg)]">
+          <div class="[display:flex] [align-items:center] [gap:10px] [margin-bottom:12px]">
+            <span style="background:#155DFC" class="[width:40px] [height:40px] [border-radius:50%] [display:grid] [place-items:center] [box-shadow:0_0_0_2px_#fff,_0_0_0_4px_#F6339A]"><span style="background:#fff" class="[width:12px] [height:12px] [border-radius:2px] [transform:rotate(45deg)]"></span></span>
+            <span class="[display:flex] [flex-direction:column] [gap:4px]"><strong class="[font-size:13px] [line-height:1]">your.business</strong><span class="[font-size:11px] [line-height:1] [color:#4A5675] [font-weight:600] [white-space:nowrap]">16 posts/mo</span></span>
+            <span style="background:#155DFC" class="[margin-left:auto] [flex:none] [padding:5px_8px] [border-radius:7px] [color:#fff] [font-size:10px] [font-weight:700] [line-height:1]">Follow</span>
+          </div>
+          <div class="[display:grid] [grid-template-columns:repeat(3,1fr)] [gap:3px]">
+            <span style="background:#155DFC" class="[aspect-ratio:1] [display:grid] [place-items:center]"><span style="background:#fff" class="[width:12px] [height:12px] [border-radius:2px] [transform:rotate(45deg)]"></span></span>
+            <span style="background:#00D3F2" class="[aspect-ratio:1]"></span>
+            <span style="background:#0B1B3A" class="[aspect-ratio:1] [display:grid] [place-items:center]"><span class="[width:0] [height:0] [border-left:12px_solid_#fff] [border-top:8px_solid_transparent] [border-bottom:8px_solid_transparent]"></span></span>
+            <span style="background:#F6339A" class="[aspect-ratio:1]"></span>
+            <span style="background:#E6EBF4" class="[aspect-ratio:1] [display:grid] [place-items:center]"><span style="background:#155DFC" class="[width:14px] [height:14px] [border-radius:50%]"></span></span>
+            <span style="background:#155DFC" class="[aspect-ratio:1]"></span><span style="background:#0B1B3A" class="[aspect-ratio:1]"></span>
+            <span style="background:#F6339A" class="[aspect-ratio:1] [display:grid] [place-items:center]"><span style="background:#fff" class="[width:12px] [height:12px] [border-radius:2px] [transform:rotate(45deg)]"></span></span>
+            <span style="background:#00D3F2" class="[aspect-ratio:1]"></span>
+          </div>
+        </div>
+        <div style="background:#00D3F2" class="[position:absolute] [top:16px] [right:max(4px,calc(50%_-_200px))] [z-index:2] [transform:rotate(6deg)] [padding:9px_14px] [border-radius:12px] [color:#0B1B3A] [font-weight:800] [font-size:14px] [line-height:1] [box-shadow:0_12px_24px_-12px_rgba(11,27,58,.4)]">Scheduled for 9:00 AM</div>
+      </div>
+      <div data-pane="email" hidden class="[display:contents]">
+        <div style="background:#fff" class="[width:300px] [margin-bottom:-30px] [border-radius:20px] [padding:22px] [box-shadow:0_30px_60px_-30px_rgba(11,27,58,.45),_0_0_0_1px_rgba(11,27,58,.06)] [transform:rotate(2deg)] [display:flex] [flex-direction:column] [gap:14px]">
+          <div class="[display:flex] [align-items:center] [gap:10px]"><span style="background:#0B1B3A" class="[width:34px] [height:34px] [border-radius:10px] [display:grid] [place-items:center]"><span style="background:#fff" class="[width:10px] [height:10px] [border-radius:2px] [transform:rotate(45deg)]"></span></span><span class="[display:flex] [flex-direction:column] [gap:4px]"><strong class="[font-size:13px] [line-height:1]">Your Business</strong><span class="[font-size:11px] [line-height:1] [color:#4A5675] [font-weight:600]">to: past customers</span></span></div>
+          <strong class="[font-size:20px] [line-height:1] [letter-spacing:-0.02em]">Spring tune-up week is here</strong>
+          <span style="background:#E6EBF4" class="[width:100%] [height:7px] [border-radius:4px]"></span>
+          <span style="background:#E6EBF4" class="[width:80%] [height:7px] [border-radius:4px]"></span>
+          <span style="background:#155DFC" class="[align-self:flex-start] [padding:10px_14px] [border-radius:10px] [color:#fff] [font-weight:700] [font-size:13px] [line-height:1]">Book your visit</span>
+          <span class="[height:40px]"></span>
+        </div>
+        <div style="background:#F6339A" class="[position:absolute] [top:16px] [right:max(4px,calc(50%_-_190px))] [z-index:2] [transform:rotate(-6deg)] [padding:9px_14px] [border-radius:12px] [color:#0B1B3A] [font-weight:800] [font-size:14px] [line-height:1] [box-shadow:0_12px_24px_-12px_rgba(11,27,58,.4)]">Automation: on</div>
+      </div>
+      <span style="background:rgba(11,27,58,.08)" class="[position:absolute] [left:0] [right:0] [bottom:0] [height:2px]"></span>
+    </div>
+  </div>
+
+  <div data-reveal>
+    <div data-pane="social" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
+      <PlanCard kind="social" id="starter" />
+      <PlanCard kind="social" id="growth" />
+      <PlanCard kind="social" id="full" />
+    </div>
+    <div data-pane="email" hidden class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
+      <PlanCard kind="email" id="starter" />
+      <PlanCard kind="email" id="growth" />
+      <PlanCard kind="email" id="full" />
+    </div>
+  </div>
+
+  <div id="addons" class="[margin-top:clamp(20px,10vw_-_40px,80px)] [display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))] [gap:20px]">
+    <div class="box" data-reveal>
+      <div class="[display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [flex-wrap:wrap]">
+        <div class="[display:flex] [align-items:center] [gap:14px]"><span style="background:#F6339A" class="[width:44px] [height:44px] [border-radius:12px] [display:grid] [place-items:center] [color:#fff] [font-weight:800] [font-size:26px] [line-height:1]">+</span><h3 class="[margin:0] [font-weight:800] [font-size:22px] [line-height:1]">Extra social platform</h3></div>
+        <span class="[font-weight:800] [font-size:22px] [line-height:1]">+$199<span class="[font-size:15px] [color:#4A5675] [font-weight:700]">/month each</span></span>
+      </div>
+      <p class="[margin:0] [font-size:16px] [line-height:1.4] [color:#3D4A68]">Add more places to your social plan: TikTok, LinkedIn, YouTube Shorts, Pinterest or Google Business Profile.</p>
+    </div>
+    <div class="box" data-reveal>
+      <div class="[display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [flex-wrap:wrap]">
+        <div class="[display:flex] [align-items:center] [gap:14px]"><span style="background:#155DFC" class="[width:44px] [height:44px] [border-radius:12px] [display:grid] [place-items:center]"><span class="[width:0] [height:0] [border-left:15px_solid_#fff] [border-top:10px_solid_transparent] [border-bottom:10px_solid_transparent] [margin-left:4px]"></span></span><h3 class="[margin:0] [font-weight:800] [font-size:22px] [line-height:1]">Ads management</h3></div>
+        <span class="[font-weight:800] [font-size:22px] [line-height:1]"><span class="[font-size:15px] [color:#4A5675] [font-weight:700]">from </span>$529<span class="[font-size:15px] [color:#4A5675] [font-weight:700]">/month</span></span>
+      </div>
+      <p class="[margin:0] [font-size:16px] [line-height:1.4] [color:#3D4A68]">Instagram and Facebook ads, priced by your monthly ad spend. Your ad budget goes directly to Meta.</p>
+      <div class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))] [gap:8px]">
+        <div style="background:#F5F7FB" class="[padding:12px_14px] [border-radius:14px] [display:flex] [flex-direction:column] [gap:6px]"><span class="[font-size:13px] [font-weight:600] [color:#4A5675] [line-height:1.2]">Spend up to $1,500</span><strong class="[font-size:18px] [line-height:1]">$529/mo</strong></div>
+        <div style="background:#F5F7FB" class="[padding:12px_14px] [border-radius:14px] [display:flex] [flex-direction:column] [gap:6px]"><span class="[font-size:13px] [font-weight:600] [color:#4A5675] [line-height:1.2]">$1,500 to $3,500</span><strong class="[font-size:18px] [line-height:1]">$799/mo</strong></div>
+        <div style="background:#F5F7FB" class="[padding:12px_14px] [border-radius:14px] [display:flex] [flex-direction:column] [gap:6px]"><span class="[font-size:13px] [font-weight:600] [color:#4A5675] [line-height:1.2]">$3,500 to $6,000</span><strong class="[font-size:18px] [line-height:1]">$1,059/mo</strong></div>
+        <div style="background:#F5F7FB" class="[padding:12px_14px] [border-radius:14px] [display:flex] [flex-direction:column] [gap:6px]"><span class="[font-size:13px] [font-weight:600] [color:#4A5675] [line-height:1.2]">Above $6,000</span><strong class="[font-size:18px] [line-height:1]">Custom quote</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div data-reveal style="background:#155DFC" class="[margin-top:20px] [position:relative] [overflow:hidden] [border-radius:28px] [color:#fff] [padding:clamp(28px,4vw,44px)] [display:flex] [flex-wrap:wrap] [align-items:center] [justify-content:space-between] [gap:20px]">
+    <span style="background:rgba(255,255,255,.08)" class="[position:absolute] [right:8%] [top:-30px] [width:90px] [height:90px] [border-radius:16px] [transform:rotate(45deg)]"></span>
+    <span style="background:#F6339A" class="[position:absolute] [right:22%] [bottom:-24px] [width:40px] [height:40px] [border-radius:8px] [transform:rotate(45deg)]"></span>
+    <div class="[position:relative] [display:flex] [flex-direction:column] [gap:12px]">
+      <h3 class="[margin:0] [font-weight:800] [font-size:clamp(28px,3.2vw,44px)] [line-height:1] [letter-spacing:-0.02em]">Get <span class="hl [color:#0B1B3A] [padding:0_.12em]" data-hl>10% off</span> when you hire both 🎉</h3>
+      <p class="[margin:0] [font-size:17px] [line-height:1.4] [color:#fff]">Any social media plan plus any email plan.</p>
+    </div>
+    <a href="#build" class="btn [position:relative] [height:52px] [padding:0_24px] [color:#0B1B3A] [font-size:16px]" style="background:#fff">Build your plan</a>
+  </div>
+
+<PlanBuilder />
+</section>

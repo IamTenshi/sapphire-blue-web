@@ -1,0 +1,29 @@
+---
+import { EMAIL, SOCIAL, fmt, type PlanId } from "../data/pricing";
+
+interface Props {
+  kind: "social" | "email";
+  id: PlanId;
+}
+
+const { kind, id } = Astro.props;
+const plan = (kind === "social" ? SOCIAL : EMAIL)[id];
+const featured = id === "growth";
+---
+
+<article class:list={["plan", { featured }]}>
+  {
+    featured && (
+      <div class="badge">
+        <span class="dot" style="background:#fff" />
+        Recommended
+      </div>
+    )
+  }<div><h3>{plan.name}</h3><p class="tag">{plan.tag}</p></div><div
+    class="price"
+  >
+    <b>{fmt(plan.price)}</b><span>/month</span>
+  </div><a href="#contact" class="cta" data-plan={`${kind}:${id}`}
+    >Choose {plan.name}</a
+  ><ul>{plan.features.map((feature) => <li>{feature}</li>)}</ul>
+</article>

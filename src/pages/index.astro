@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Services from '../components/Services.astro';
+import Websites from '../components/Websites.astro';
+import Pricing from '../components/Pricing.astro';
+import FAQ from '../components/FAQ.astro';
+import CallToAction from '../components/CallToAction.astro';
+import Contact from '../components/Contact.astro';
+import Footer from '../components/Footer.astro';
+---
+<BaseLayout>
+<div style="background:radial-gradient(rgba(11,27,58,.10) 1px, transparent 1.4px) 0 0/22px 22px, #F5F7FB" class="[min-height:100vh] [position:relative] [overflow-x:clip]">
+  <Header />
+  <main id="top">
+    <Hero />
+    <Services />
+    <Websites />
+    <Pricing />
+    <FAQ />
+    <CallToAction />
+    <Contact />
+  </main>
+  <Footer />
+</div>
+</BaseLayout>
+
+<script>
+  import '../scripts/site';
+</script>
