@@ -1,6 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { calculate, type PlanSelection, type AdId } from '../src/data/pricing';
 
+test('production styles and fonts avoid render-blocking stylesheet requests', async ({ request }) => {
+  const response = await request.get('/');
+  expect(response.status()).toBe(200);
+  const html = await response.text();
+  expect(html).not.toMatch(/<link\b[^>]*\brel=["']stylesheet["']/i);
+  expect(html).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+  expect(html).toMatch(/<style\b[^>]*>[\s\S]*?@font-face/);
+  expect(html).toMatch(/<link\b[^>]*\brel="preload"[^>]*\bhref="\/fonts\/manrope-latin-wght-400-800\.woff2"[^>]*\bcrossorigin/);
+  const font = await request.get('/fonts/manrope-latin-wght-400-800.woff2');
+  expect(font.status()).toBe(200);
+  expect((await font.body()).subarray(0, 4).toString()).toBe('wOF2');
+});
+
 test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
