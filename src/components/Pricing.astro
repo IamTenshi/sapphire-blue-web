@@ -8,9 +8,9 @@ import PlanCard from './PlanCard.astro';
       <div class="eyebrow">Plans</div>
       <h2 class="h2">Simple monthly pricing, <span class="hl" data-hl>tools included.</span></h2>
       <p class="lead [max-width:480px]">Monthly plans in USD with the tools already included. Pick the level that fits where your business is today.</p>
-      <div role="tablist" style="background:rgba(11,27,58,.06)" class="[display:inline-flex] [gap:4px] [padding:5px] [border-radius:16px] [margin-top:8px]">
-        <button role="tab" class="tab" data-tabbtn="social" aria-selected="true">Social media</button>
-        <button role="tab" class="tab" data-tabbtn="email" aria-selected="false">Email marketing</button>
+      <div role="tablist" aria-label="Marketing plans" data-js-only style="background:rgba(11,27,58,.06)" class="[display:inline-flex] [gap:4px] [padding:5px] [border-radius:16px] [margin-top:8px]">
+        <button type="button" role="tab" id="tab-social" aria-controls="plans-social" class="tab" data-tabbtn="social" aria-selected="true" tabindex="0">Social media</button>
+        <button type="button" role="tab" id="tab-email" aria-controls="plans-email" class="tab" data-tabbtn="email" aria-selected="false" tabindex="-1">Email marketing</button>
       </div>
     </div>
     <div data-reveal aria-hidden="true" class="[display:flex] [justify-content:center] [align-items:flex-end] [height:260px] [overflow:hidden] [position:relative]">
@@ -50,12 +50,12 @@ import PlanCard from './PlanCard.astro';
   </div>
 
   <div data-reveal>
-    <div data-pane="social" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
+    <div id="plans-social" role="tabpanel" aria-labelledby="tab-social" tabindex="0" data-pane="social" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
       <PlanCard kind="social" id="starter" />
       <PlanCard kind="social" id="growth" />
       <PlanCard kind="social" id="full" />
     </div>
-    <div data-pane="email" hidden class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
+    <div id="plans-email" role="tabpanel" aria-labelledby="tab-email" tabindex="0" data-pane="email" hidden class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))] [gap:20px] [align-items:stretch]">
       <PlanCard kind="email" id="starter" />
       <PlanCard kind="email" id="growth" />
       <PlanCard kind="email" id="full" />

@@ -13,7 +13,7 @@ import Footer from '../components/Footer.astro';
 <BaseLayout>
 <div style="background:radial-gradient(rgba(11,27,58,.10) 1px, transparent 1.4px) 0 0/22px 22px, #F5F7FB" class="[min-height:100vh] [position:relative] [overflow-x:clip]">
   <Header />
-  <main id="top">
+  <main id="top" tabindex="-1">
     <Hero />
     <Services />
     <Websites />
@@ -24,6 +24,20 @@ import Footer from '../components/Footer.astro';
   </main>
   <Footer />
 </div>
+<noscript>
+  <style is:inline>
+    @layer components {
+      [data-js-only], #build > div { display: none !important; }
+      [role="tabpanel"][hidden] { display: grid !important; margin-top: 20px; }
+      .faq .ans { display: flex; }
+      .faq .pm { display: none; }
+      @media (max-width: 819px) {
+        .burger { display: none; }
+        .mmenu { display: flex; }
+      }
+    }
+  </style>
+</noscript>
 </BaseLayout>
 
 <script>
