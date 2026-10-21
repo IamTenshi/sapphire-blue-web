@@ -1,4 +1,5 @@
   <div id="build" data-reveal style="background:#fff" class="[margin-top:clamp(64px,8vw,112px)] [border-radius:28px] [border:1px_solid_rgba(11,27,58,.06)] [display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))] [overflow:hidden]">
+    <noscript><p class="lead [padding:32px]">To build a custom plan, enable JavaScript or <a href="#contact">contact us</a>. You can still compare all six plans above.</p></noscript>
     <div class="[padding:clamp(24px,3.5vw,40px)] [display:flex] [flex-direction:column] [gap:28px]">
       <div class="[display:flex] [flex-direction:column] [gap:10px]">
         <h3 class="[margin:0] [font-weight:800] [font-size:clamp(26px,2.6vw,34px)] [line-height:1] [letter-spacing:-0.02em]">Build your plan</h3>
@@ -6,11 +7,11 @@
       </div>
       <div class="[display:flex] [flex-direction:column] [gap:12px]">
         <span class="[font-weight:700] [font-size:15px] [line-height:1]">Social media</span>
-        <div id="optSocial" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(110px,1fr))] [gap:8px]"></div>
+        <div id="optSocial" role="group" aria-label="Social media plan" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(110px,1fr))] [gap:8px]"></div>
       </div>
       <div class="[display:flex] [flex-direction:column] [gap:12px]">
         <span class="[font-weight:700] [font-size:15px] [line-height:1]">Email marketing</span>
-        <div id="optEmail" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(110px,1fr))] [gap:8px]"></div>
+        <div id="optEmail" role="group" aria-label="Email marketing plan" class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(110px,1fr))] [gap:8px]"></div>
       </div>
       <div id="netsRow" class="[display:flex] [align-items:center] [justify-content:space-between] [gap:16px] [flex-wrap:wrap]">
         <div class="[display:flex] [flex-direction:column] [gap:6px]"><span class="[font-weight:700] [font-size:15px] [line-height:1]">Extra social platforms</span><span id="netsHint" class="[font-size:13px] [line-height:1.3] [color:#4A5675] [font-weight:600]"></span></div>
@@ -22,14 +23,14 @@
       </div>
       <div class="[display:flex] [flex-direction:column] [gap:12px]">
         <span class="[font-weight:700] [font-size:15px] [line-height:1]">Ads management <span class="[font-weight:600] [color:#4A5675]">(by monthly ad spend)</span></span>
-        <div id="optAds" class="[display:flex] [flex-wrap:wrap] [gap:8px]"></div>
+        <div id="optAds" role="group" aria-label="Ads management budget" class="[display:flex] [flex-wrap:wrap] [gap:8px]"></div>
       </div>
     </div>
     <div style="background:#F5F7FB" class="[padding:clamp(24px,3.5vw,40px)] [display:flex] [flex-direction:column] [gap:20px]">
       <span class="[font-weight:700] [font-size:15px] [line-height:1] [color:#4A5675]">Your monthly total</span>
       <div id="lines" class="[display:flex] [flex-direction:column] [gap:14px]"></div>
       <div style="background:rgba(11,27,58,.1)" class="[height:1px]"></div>
-      <div class="[display:flex] [align-items:baseline] [gap:6px] [flex-wrap:wrap]"><span id="total" class="[font-weight:800] [font-size:clamp(44px,4.4vw,60px)] [line-height:1] [letter-spacing:-0.03em]">$0</span><span class="[font-weight:700] [font-size:17px] [color:#4A5675]">/month</span></div>
+      <div role="status" aria-live="polite" aria-atomic="true" aria-label="Monthly estimate" class="[display:flex] [align-items:baseline] [gap:6px] [flex-wrap:wrap]"><span id="total" class="[font-weight:800] [font-size:clamp(44px,4.4vw,60px)] [line-height:1] [letter-spacing:-0.03em]">$0</span><span class="[font-weight:700] [font-size:17px] [color:#4A5675]">/month</span></div>
       <span id="customAds" hidden class="[font-size:15px] [line-height:1.4] [font-weight:600] [color:#3D4A68]">Plus a custom quote for ads management.</span>
       <span id="combo" hidden style="background:#00D3F2" class="[align-self:flex-start] [transform:rotate(-2deg)] [padding:8px_12px] [border-radius:10px] [color:#0B1B3A] [font-weight:800] [font-size:14px] [line-height:1]"></span>
       <span class="[font-size:13px] [line-height:1.4] [color:#4A5675]">The 10% combo applies to social media and email plans only. Ad spend is paid directly to Meta and is not included.</span>

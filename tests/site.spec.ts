@@ -51,6 +51,14 @@ test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   for (const path of ['/og-image.png', '/robots.txt', '/sitemap.xml']) {
     expect((await request.get(path)).status()).toBe(200);
   }
+  // Off-screen lazy images need an explicit load before their decode can be
+  // validated. Don't assume that page.goto() fetched the entire long page.
+  await page.evaluate(async () => {
+    await Promise.all(Array.from(document.images, image => {
+      image.loading = 'eager';
+      return image.decode();
+    }));
+  });
   expect(await page.locator('img').evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
   expect(errors).toEqual([]);
 });

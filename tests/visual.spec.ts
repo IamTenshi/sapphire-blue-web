@@ -7,6 +7,10 @@ for (const width of [390, 819, 820, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(process.env.BASELINE_URL ?? '/');
     await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => Promise.all(Array.from(document.images, image => {
+      image.loading = 'eager';
+      return image.decode();
+    })));
     expect(await page.evaluate(() => document.fonts.check('800 48px Manrope'))).toBe(true);
     await expect(page.locator('#total')).toHaveText('$1,942.20');
     await expect(page).toHaveScreenshot(`original-${width}.png`, {
@@ -24,6 +28,10 @@ for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(process.env.BASELINE_URL ?? '/');
     await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => Promise.all(Array.from(document.images, image => {
+      image.loading = 'eager';
+      return image.decode();
+    })));
     await page.locator('[data-tabbtn="email"]').click();
     await page.locator('#netsInc').click();
     await page.locator('#optAds button').last().click();

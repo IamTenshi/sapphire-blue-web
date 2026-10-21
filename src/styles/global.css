@@ -85,7 +85,7 @@ input,textarea,button,select{font-family:inherit;letter-spacing:inherit}
 .opt.on span{color:rgba(255,255,255,.9)}
 .step{width:44px;height:44px;border:0;border-radius:10px;background:#fff;cursor:pointer;font-size:22px;font-weight:700;color:#0B1B3A}
 .faq{background:#fff;border-radius:20px;border:1px solid rgba(11,27,58,.06);overflow:hidden}
-.faq button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;background:transparent;border:0;cursor:pointer;text-align:left;color:#0B1B3A}
+.faq button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;background:transparent;border:0;cursor:pointer;text-align:left;color:#0B1B3A;font:inherit;letter-spacing:inherit}
 .faq h3{margin:0;font-weight:700;font-size:clamp(17px,1.4vw,19px);line-height:1.2}
 .faq .pm{flex:none;width:32px;height:32px;border-radius:10px;background:#F5F7FB;color:#0B1B3A;display:grid;place-items:center;font-size:20px;font-weight:700;line-height:1;transition:transform .25s,background .25s}
 .faq.open .pm{background:#155DFC;color:#fff;transform:rotate(45deg)}
@@ -103,6 +103,11 @@ input,textarea,button,select{font-family:inherit;letter-spacing:inherit}
 .soc{width:44px;height:44px;border-radius:12px;background:#F5F7FB;display:grid;place-items:center;transition:background .2s}
 .soc:hover{background:#E6EBF4}
 .burger,.mmenu{display:none}
+.skip-link{position:fixed;top:8px;left:8px;z-index:100;padding:12px 20px;background:#fff;color:#0B1B3A;border-radius:12px;font-weight:700}
+.skip-link:not(:focus){width:1px;height:1px;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+:is(a,button,input,textarea,select,[role="tabpanel"]):focus-visible{outline:3px solid #155DFC;outline-offset:4px}
+.faq button:focus-visible{outline-offset:-4px}
+#top:focus{outline:none}
 @media (max-width:819px){.desk{display:none!important}.burger{display:flex}.mmenu.open{display:flex}}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 }

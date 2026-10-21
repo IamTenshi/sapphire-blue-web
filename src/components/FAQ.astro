@@ -1,3 +1,6 @@
+---
+import { faqEntries } from '../data/faq';
+---
 <section id="faq" class="wrap sec">
   <div class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr))] [gap:clamp(40px,6vw,96px)] [align-items:start]">
     <div data-reveal class="[display:flex] [flex-direction:column] [gap:24px] [align-items:flex-start]">
@@ -6,12 +9,14 @@
       <p class="lead [max-width:400px]">Quick answers to what most owners ask first. Have another question? <a href="#contact" class="[color:#155DFC] [font-weight:700]">Ask us here</a>.</p>
     </div>
     <div data-reveal id="faqList" class="[display:flex] [flex-direction:column] [gap:10px]">
-      <div class="faq open"><button aria-expanded="true"><h3>What is included in the price?</h3><span class="pm">+</span></button><div class="ans"><p>Everything listed in your plan, plus the tools to run it. Scheduling, analytics and email platform costs are already covered, so there are no extra subscriptions to pay.</p><p>Every plan comes with a report, and the higher the plan, the more detailed it gets. Prices are monthly, in USD.</p></div></div>
-      <div class="faq"><button aria-expanded="false"><h3>How does the website process work?</h3><span class="pm">+</span></button><div class="ans"><p>It starts with a conversation about your business. From there you get a plan: a brand-new site if you don’t have one yet, or an update of your current site with your latest information.</p><p>Delivery usually takes 1 to 2 weeks, depending on complexity.</p><p>Every site includes custom design, mobile-first layouts, SEO setup and forms that send leads straight to your inbox.</p></div></div>
-      <div class="faq"><button aria-expanded="false"><h3>Can I change plans?</h3><span class="pm">+</span></button><div class="ans"><p>Yes. You can move up or down between levels as your business changes.</p><p>Changes apply the following month, so if you ask in January, the new plan starts in February.</p></div></div>
-      <div class="faq"><button aria-expanded="false"><h3>How does billing work?</h3><span class="pm">+</span></button><div class="ans"><p>Plans are billed monthly in USD at a set price. Your billing date is the day you start, and if another day of the month works better, it can be moved.</p><p>Pay by card or any other method Stripe supports. Hire both social media and email marketing and you get 10% off those two plans.</p></div></div>
-      <div class="faq"><button aria-expanded="false"><h3>Do you handle hosting and maintenance after launch?</h3><span class="pm">+</span></button><div class="ans"><p>Yes. Hosting and maintenance are billed monthly, separate from the website build, so your site stays online and up to date after it launches.</p></div></div>
-      <div class="faq"><button aria-expanded="false"><h3>Can I approve posts before they go live?</h3><span class="pm">+</span></button><div class="ans"><p>Yes. You can review and approve every post before it’s published, or leave it to us. It’s your call.</p></div></div>
+      {faqEntries.map(({ id, question, paragraphs }, index) => (
+        <div class:list={['faq', { open: index === 0 }]}>
+          <h3><button type="button" id={`faq-${id}`} aria-expanded={index === 0 ? 'true' : 'false'} aria-controls={`answer-${id}`}><span>{question}</span><span class="pm" aria-hidden="true">+</span></button></h3>
+          <div class="ans" id={`answer-${id}`} role="region" aria-labelledby={`faq-${id}`}>
+            {paragraphs.map(text => <p>{text}</p>)}
+          </div>
+        </div>
+      ))}
     </div>
   </div>
 </section>

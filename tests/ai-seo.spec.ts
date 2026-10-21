@@ -41,7 +41,7 @@ for (const userAgent of ['Googlebot', 'OAI-SearchBot', 'PerplexityBot', 'Claude-
     const faq = graph.find((entry: { '@type': string }) => entry['@type'] === 'FAQPage');
     expect(faq.mainEntity).toHaveLength(6);
     for (const question of faq.mainEntity) {
-      expect(html).toContain(`<h3>${question.name}</h3>`);
+      expect(html).toContain(`<span>${question.name}</span>`);
     }
     const page = graph.find((entry: { '@type': string }) => entry['@type'] === 'WebPage');
     expect(page.mainEntity['@id']).toBe(organization['@id']);

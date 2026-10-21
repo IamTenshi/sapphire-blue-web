@@ -1,4 +1,8 @@
 import { EMAIL, SOCIAL } from './pricing';
+import { faqEntries } from './faq';
+
+// Add only real, indexable HTML pages here, not fragments or discovery files.
+export const indexablePaths = ['/'] as const;
 
 export const siteIdentity = {
   name: 'sapphire blue.',
@@ -11,16 +15,6 @@ export const siteIdentity = {
     'https://www.instagram.com/sapphireblue.studio/',
   ],
 };
-
-// These answers summarize the existing, visible FAQ. No invented business facts.
-const faq = [
-  ['What is included in the price?', 'Everything listed in your plan, plus the tools to run it. Scheduling, analytics and email platform costs are already covered, so there are no extra subscriptions to pay. Every plan comes with a report. Prices are monthly, in USD.'],
-  ['How does the website process work?', 'It starts with a conversation about your business. You get a brand-new site or an update of your current one. Delivery usually takes 1 to 2 weeks. Every site includes custom design, mobile-first layouts, SEO setup and forms that send leads straight to your inbox.'],
-  ['Can I change plans?', 'Yes. You can move up or down between levels as your business changes. Changes apply the following month.'],
-  ['How does billing work?', 'Plans are billed monthly in USD at a set price. Pay by card or any other method Stripe supports. Hire both social media and email marketing and you get 10% off those two plans.'],
-  ['Do you handle hosting and maintenance after launch?', 'Yes. Hosting and maintenance are billed monthly, separate from the website build.'],
-  ['Can I approve posts before they go live?', "Yes. You can review and approve every post before it's published, or leave it to us."],
-];
 
 export function createSiteGraph(siteUrl: string) {
   const organization = { '@id': `${siteUrl}#org` };
@@ -109,10 +103,10 @@ export function createSiteGraph(siteUrl: string) {
         '@type': 'FAQPage',
         '@id': `${siteUrl}#faq`,
         isPartOf: { '@id': `${siteUrl}#webpage` },
-        mainEntity: faq.map(([name, text]) => ({
+        mainEntity: faqEntries.map(({ question, paragraphs }) => ({
           '@type': 'Question',
-          name,
-          acceptedAnswer: { '@type': 'Answer', text },
+          name: question,
+          acceptedAnswer: { '@type': 'Answer', text: paragraphs.join(' ') },
         })),
       },
     ],

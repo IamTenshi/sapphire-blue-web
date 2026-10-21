@@ -7,31 +7,33 @@
       <a href="mailto:hello@sapphireblue.studio" style="background:#fff" class="[margin-top:8px] [display:flex] [align-items:center] [gap:14px] [padding:14px] [border-radius:16px] [border:1px_solid_rgba(11,27,58,.06)] [text-decoration:none] [color:#0B1B3A]"><span style="background:#F6339A" class="[width:44px] [height:44px] [border-radius:12px] [display:grid] [place-items:center]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span><span class="[display:flex] [flex-direction:column] [gap:5px]"><span class="[font-size:13px] [line-height:1] [font-weight:600] [color:#4A5675]">Email</span><strong class="[font-size:17px] [line-height:1]">hello@sapphireblue.studio</strong></span></a>
     </div>
     <div id="contact-form" data-reveal style="background:#fff" class="[border-radius:28px] [border:1px_solid_rgba(11,27,58,.06)] [box-shadow:0_40px_80px_-50px_rgba(11,27,58,.4)] [padding:clamp(24px,3.5vw,40px)]">
-      <form id="form" class="[display:flex] [flex-direction:column] [gap:18px]">
+      <noscript><p class="lead">Please use the email link to send your request. The form requires JavaScript.</p></noscript>
+      <form id="form" data-js-only class="[display:flex] [flex-direction:column] [gap:18px]">
         <div class="[display:grid] [grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))] [gap:14px]">
           <label class="field"><span>Your name <span class="req">*</span></span><input required name="name" placeholder="John Doe" autocomplete="name"></label>
           <label class="field">Business name<input name="business" placeholder="Smith Plumbing" autocomplete="organization"></label>
           <label class="field"><span>Email <span class="req">*</span></span><input required type="email" name="email" placeholder="you@gmail.com" autocomplete="email"></label>
           <label class="field">Phone<input type="tel" name="phone" placeholder="Optional" autocomplete="tel"></label>
         </div>
-        <div class="[display:flex] [flex-direction:column] [gap:10px]">
-          <span class="[font-weight:700] [font-size:14px]">What do you need? <span class="req">*</span></span>
+        <div id="needs" role="group" aria-labelledby="needs-label" aria-describedby="needError" class="[display:flex] [flex-direction:column] [gap:10px]">
+          <span id="needs-label" class="[font-weight:700] [font-size:14px]">What do you need? <span class="req">*</span></span>
           <div class="[display:flex] [flex-wrap:wrap] [gap:8px]">
-            <button type="button" class="need on" data-need="website">Website</button>
-            <button type="button" class="need" data-need="social">Social media</button>
-            <button type="button" class="need" data-need="email">Email marketing</button>
-            <button type="button" class="need" data-need="ads">Ads</button>
+            <button type="button" class="need on" data-need="website" aria-pressed="true">Website</button>
+            <button type="button" class="need" data-need="social" aria-pressed="false">Social media</button>
+            <button type="button" class="need" data-need="email" aria-pressed="false">Email marketing</button>
+            <button type="button" class="need" data-need="ads" aria-pressed="false">Ads</button>
           </div>
-          <span id="needError" hidden class="[font-size:13px] [font-weight:700] [color:#B0126B]">Pick at least one so we know where to start.</span>
+          <span id="needError" role="alert" hidden class="[font-size:13px] [font-weight:700] [color:#B0126B]">Pick at least one so we know where to start.</span>
         </div>
         <label class="field">Tell us a bit about your business<textarea name="message" rows="5" placeholder="What you do, where you work, what you'd like help with."></textarea></label>
         <button type="submit" class="btn btn-p [justify-content:center] [box-shadow:none]">Send request</button>
+        <p id="submitError" role="alert" hidden class="[margin:0] [font-size:14px] [color:#B0126B]">We couldn’t confirm your submission. Your details are still here. Try again, or <a href="mailto:hello@sapphireblue.studio">email us directly</a>.</p>
         <span class="[font-size:13px] [line-height:1.4] [color:#4A5675]">We reply in less than 24 hours.</span>
       </form>
       <div id="sent" hidden class="[min-height:380px] [flex-direction:column] [align-items:flex-start] [justify-content:center] [gap:18px]">
         <span style="background:#00D3F2" class="[width:64px] [height:64px] [border-radius:18px] [display:grid] [place-items:center] [transform:rotate(-4deg)]"><span style="background:#0B1B3A" class="[width:18px] [height:18px] [border-radius:3px] [transform:rotate(45deg)]"></span></span>
-        <h3 class="[margin:0] [font-weight:800] [font-size:36px] [line-height:1] [letter-spacing:-0.02em]">Got it. Consider it handled.</h3>
-        <p class="[margin:0] [font-size:17px] [line-height:1.4] [color:#3D4A68] [max-width:380px]">Your request is in. We'll reach out within 24 hours with next steps.</p>
+        <h3 id="sent-heading" tabindex="-1" class="[margin:0] [font-weight:800] [font-size:36px] [line-height:1] [letter-spacing:-0.02em]">Request submitted.</h3>
+        <p class="[margin:0] [font-size:17px] [line-height:1.4] [color:#3D4A68] [max-width:380px]">Your browser sent the request, but delivery can’t be confirmed here. If you don’t hear from us within 24 hours, <a href="mailto:hello@sapphireblue.studio">email us directly</a>.</p>
         <button type="button" id="again" style="background:#fff" class="[height:44px] [padding:0_18px] [border-radius:12px] [border:1.5px_solid_rgba(11,27,58,.14)] [font-weight:700] [font-size:15px] [cursor:pointer] [color:#0B1B3A]">Send another</button>
       </div>
     </div>

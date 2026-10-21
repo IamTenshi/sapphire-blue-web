@@ -22,12 +22,16 @@ pnpm dev
 ## Organización
 
 - `src/pages/index.astro`: composición de la página.
-- `src/layouts/BaseLayout.astro`: documento, fuentes, metadatos y datos estructurados originales.
+- `src/layouts/BaseLayout.astro`: documento, fuentes, metadatos por página, protección de previews con `noindex` y datos estructurados.
 - `src/components/`: secciones y tarjetas de planes.
 - `src/data/pricing.ts`: precios, tipos y cálculo compartidos por las tarjetas y la calculadora.
+- `src/data/faq.ts`: preguntas y respuestas compartidas por el contenido visible y Schema.
 - `src/scripts/site.ts`: navegación, pestañas, FAQ, calculadora, formulario y animaciones.
+- `src/scripts/marketing.ts`: eventos del embudo sin datos personales, sin envío externo por defecto.
 - `src/styles/global.css`: reglas originales y configuración de Tailwind.
-- `public/`: imágenes, `robots.txt` y `sitemap.xml`, con sus URLs públicas preservadas.
+- `public/`: imágenes, fuentes e iconos, con sus URLs públicas preservadas.
+- `src/pages/robots.txt.ts` y `src/pages/sitemap.xml.ts`: archivos estáticos generados desde `Astro.site`. `indexablePaths` en `src/data/seo.ts` enumera las páginas HTML indexables; al añadir páginas hay que actualizarlo.
+- `src/pages/404.astro`: página de error con `noindex`, sin canonical ni Schema de la portada.
 
 ## Fidelidad visual
 
@@ -42,7 +46,9 @@ pnpm exec playwright install --with-deps chromium
 pnpm test
 ```
 
-Las pruebas del formulario interceptan las solicitudes: no envían contactos reales. En producción se mantienen el endpoint de Google Apps Script y el comportamiento original de envío `no-cors`, incluida la pantalla de confirmación sin verificación de entrega.
+Las pruebas usan un build nuevo en `http://127.0.0.1:4322`, sin reutilizar servidores existentes. Se puede cambiar el puerto con `PLAYWRIGHT_PORT=4338 pnpm test`. No se deben actualizar las capturas de referencia para ocultar regresiones.
+
+Las pruebas del formulario interceptan las solicitudes: no envían contactos reales. En producción se conserva el endpoint de Google Apps Script y el envío `no-cors`. El formulario espera la respuesta de transporte, bloquea envíos simultáneos y recupera los datos ante errores o un timeout de 15 segundos. Una respuesta opaca **no confirma recepción ni entrega**: el estado final lo indica expresamente y ofrece contacto por email. Confirmar leads exige un backend con respuesta verificable; no se ha cambiado ni probado el Apps Script real.
 
 ## Vercel
 
@@ -59,18 +65,27 @@ El proyecto es `iamtenshis-projects/sapphire-blue-web`, del equipo `iamtenshi's 
 
 ### Dominio
 
-- `sapphireblue.studio` y `www.sapphireblue.studio` están añadidos al proyecto y pendientes de verificación por TXT. Vercel pide dos registros TXT en `_vercel.sapphireblue.studio`, uno por cada nombre, con el valor `vc-domain-verify=<dominio>,<hash>` que devuelve el panel o `vercel project web-analytics`. La verificación se relanza con `vercel domains inspect <dominio>` o con `POST /v9/projects/<id>/domains/<dominio>/verify`.
-- Los DNS del dominio están en Squarespace (`nse1`–`nse4.squarespacedns.com`), no en Vercel. El apex resuelve a los IP de Vercel y `www` a un CNAME de `vercel-dns`.
-- El dominio estaba registrado en otra cuenta de Vercel, que sigue sirviendo la versión anterior del sitio. Hay que quitarlo de esa cuenta antes de que la asignación nueva tome efecto.
+- Comprobación pública del 21 de octubre de 2026: `https://sapphireblue.studio/` termina en `https://www.sapphireblue.studio/` con HTTP 200. La portada devuelve el título actual; `/robots.txt`, `/sitemap.xml` y `/llms.txt` también responden HTTP 200.
+- Las notas anteriores registraban DNS en Squarespace y verificaciones TXT pendientes por una asignación en otra cuenta de Vercel. La respuesta pública ya funciona, pero no acredita la titularidad ni el estado administrativo del proyecto: comprobarlo en el panel antes de cambiar DNS o dominios. No se han realizado cambios en esos servicios.
 
 ## Visibilidad en buscadores de IA
 
 `src/data/seo.ts` centraliza la identidad y los datos estructurados. Los seis planes de su `OfferCatalog` y `/pricing.md` se generan desde `src/data/pricing.ts`. `/llms.txt` ofrece un índice opcional; no es un requisito de Google ni garantiza citas. Estos cambios no alteran el contenido visible de la portada. El diagnóstico, los límites y los pasos de Search Console y medición están en [`docs/ai-search.md`](docs/ai-search.md).
 
+## SEO, accesibilidad y conversión
+
+La ampliación en `feat/seo-geo-growth` conserva el diseño y el copy comercial. Añade FAQ sin duplicación de datos, navegación por teclado, estados accesibles de selección, alternativas sin JavaScript, una página 404 real y metadatos que no reutilizan el canonical de portada en otras rutas. Solo cambia el texto funcional del formulario para no afirmar una entrega que el navegador no puede verificar. El alcance, los límites y las siguientes oportunidades están en [`docs/seo-growth.md`](docs/seo-growth.md).
+
+### Eventos de marketing
+
+Por defecto, `document` emite `sapphire:marketing` con `{ name, properties }`, sin cookies, persistencia ni solicitudes adicionales. **Esto es instrumentación, no un panel de conversiones:** sin un receptor autorizado no se almacenan eventos. No se incluyen nombres, correos, teléfonos, mensajes ni parámetros de campaña en sus propiedades.
+
+Vercel reserva los eventos personalizados para Pro y Enterprise. Solo después de confirmar plan, coste y requisitos de privacidad se puede configurar `PUBLIC_ENABLE_CUSTOM_EVENTS=true`. Se enviarán con el SDK ya instalado únicamente en builds de Vercel con `VERCEL_ENV=production`; quedan desactivados en desarrollo, builds locales sin esas variables y previews. No se ha activado la variable en Vercel ni contratado un plan.
+
 ## Compartir enlaces
 
 - Dominio canónico: `https://www.sapphireblue.studio/`. `vercel.json` configura la redirección permanente del dominio sin `www` al dominio con `www`, conservando la ruta. Mantener el sitio sin protección de acceso para los rastreadores.
-- En Vercel → proyecto → Settings → Domains, `www.sapphireblue.studio` debe servir Production (sin redirección al dominio sin `www`) y `sapphireblue.studio` debe redirigir permanentemente a `www.sapphireblue.studio`. Si se cambió previamente a la configuración inversa, corregirla antes de desplegar para evitar un bucle. Los dos dominios están añadidos al proyecto y a la espera de la verificación TXT descrita en la sección de Vercel.
+- En Vercel → proyecto → Settings → Domains, `www.sapphireblue.studio` debe servir Production (sin redirección al dominio sin `www`) y `sapphireblue.studio` debe redirigir permanentemente a `www.sapphireblue.studio`. La comprobación pública descrita arriba ya termina en `www`; revisar el panel antes de alterar esta configuración para evitar un bucle.
 - `src/layouts/BaseLayout.astro` entrega Open Graph y tarjetas de X en el HTML, sin JavaScript. `public/social-preview-v2.jpg` es una imagen JPEG de 1200 × 630 y unos 88 KB. Se conserva `/og-image.png` para enlaces antiguos.
 - `tests/sharing.spec.ts` comprueba el HTML y la imagen localmente con los agentes de WhatsApp, Facebook, X, LinkedIn, Telegram, Slack y Discord. No sustituye las pruebas reales en esas plataformas ni comprueba sus cachés o el firewall de producción.
 - Después de desplegar, verificar que la nueva imagen devuelve HTTP 200 con `Content-Type: image/jpeg`, sin redirecciones, y probar el enlace en cada plataforma. Solicitar una nueva lectura en [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) y [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/). WhatsApp y otras aplicaciones pueden conservar vistas antiguas; los mensajes ya enviados no necesariamente se actualizan.
