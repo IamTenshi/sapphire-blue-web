@@ -2,13 +2,14 @@
 import '../styles/global.css';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
+import { createSiteGraph, siteIdentity } from '../data/seo';
 
 // Vercel's collection routes are not available in local dev or preview.
 const enableObservability = import.meta.env.PROD && import.meta.env.VERCEL === '1';
 const siteUrl = new URL('/', Astro.site).href;
 const socialImage = new URL('/social-preview-v2.jpg', siteUrl).href;
-const socialTitle = 'sapphire blue. | Websites, Social Media & Email Marketing';
-const socialDescription = 'Your whole online presence in one place. Websites, social media and email marketing for small businesses. Set monthly prices, tools included.';
+const socialTitle = siteIdentity.title;
+const socialDescription = siteIdentity.description;
 const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â€” sapphireblue.studio';
 ---
 <!DOCTYPE html>
@@ -16,8 +17,8 @@ const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sapphire blue. | Websites, Social Media &amp; Email Marketing for Small Businesses</title>
-<meta name="description" content="sapphire blue. is a marketing studio for small businesses: custom websites, social media management and email campaigns with set monthly prices and tools included.">
+<title>{siteIdentity.title}</title>
+<meta name="description" content={siteIdentity.description}>
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href={siteUrl}>
 <meta name="theme-color" content="#155DFC">
@@ -45,19 +46,7 @@ const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â
 <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
 <link rel="manifest" href="/favicon/site.webmanifest">
 <link rel="preload" href="/fonts/manrope-latin-wght-400-800.woff2" as="font" type="font/woff2" crossorigin>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@graph":[
-{"@type":"WebSite","@id":"https://www.sapphireblue.studio/#website","url":"https://www.sapphireblue.studio/","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio","sapphireblue.studio"],"publisher":{"@id":"https://www.sapphireblue.studio/#org"}},
-{"@type":["Organization","ProfessionalService"],"@id":"https://www.sapphireblue.studio/#org","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio"],"url":"https://www.sapphireblue.studio/","logo":"https://www.sapphireblue.studio/assets/sapphire-blue-logo.svg","image":"https://www.sapphireblue.studio/social-preview-v2.jpg","email":"hello@sapphireblue.studio","description":"Marketing studio for small businesses: websites, social media management and email marketing with set monthly prices.","priceRange":"$$","sameAs":["https://www.facebook.com/sapphireblue.studio/","https://www.instagram.com/sapphireblue.studio/"],"makesOffer":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Website design"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Social media management"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Email marketing"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Meta ads management"}}]},
-{"@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"What is included in the price?","acceptedAnswer":{"@type":"Answer","text":"Everything listed in your plan, plus the tools to run it. Scheduling, analytics and email platform costs are already covered, so there are no extra subscriptions to pay. Every plan comes with a report. Prices are monthly, in USD."}},
-{"@type":"Question","name":"How does the website process work?","acceptedAnswer":{"@type":"Answer","text":"It starts with a conversation about your business. You get a brand-new site or an update of your current one. Delivery usually takes 1 to 2 weeks. Every site includes custom design, mobile-first layouts, SEO setup and forms that send leads straight to your inbox."}},
-{"@type":"Question","name":"Can I change plans?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can move up or down between levels as your business changes. Changes apply the following month."}},
-{"@type":"Question","name":"How does billing work?","acceptedAnswer":{"@type":"Answer","text":"Plans are billed monthly in USD at a set price. Pay by card or any other method Stripe supports. Hire both social media and email marketing and you get 10% off those two plans."}},
-{"@type":"Question","name":"Do you handle hosting and maintenance after launch?","acceptedAnswer":{"@type":"Answer","text":"Yes. Hosting and maintenance are billed monthly, separate from the website build."}},
-{"@type":"Question","name":"Can I approve posts before they go live?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can review and approve every post before it's published, or leave it to us."}}
-]}]}
-</script>
+<script type="application/ld+json" set:html={JSON.stringify(createSiteGraph(siteUrl)).replace(/</g, '\\u003c')} />
 </head>
 <body>
   {enableObservability && <Analytics />}

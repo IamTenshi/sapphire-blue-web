@@ -44,10 +44,10 @@ test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page).toHaveTitle('sapphire blue. | Websites, Social Media & Email Marketing for Small Businesses');
+  await expect(page).toHaveTitle('Sapphire Blue Studio | Small Business Marketing');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.sapphireblue.studio/');
   const graph = JSON.parse(await page.locator('script[type="application/ld+json"]').innerText());
-  expect(graph['@graph'].map((entry: { '@type': string | string[] }) => entry['@type'])).toEqual(['WebSite', ['Organization', 'ProfessionalService'], 'FAQPage']);
+  expect(graph['@graph'].map((entry: { '@type': string }) => entry['@type'])).toEqual(['WebSite', 'Organization', 'WebPage', 'OfferCatalog', 'FAQPage']);
   for (const path of ['/og-image.png', '/robots.txt', '/sitemap.xml']) {
     expect((await request.get(path)).status()).toBe(200);
   }

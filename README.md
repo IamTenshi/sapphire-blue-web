@@ -63,6 +63,10 @@ El proyecto es `iamtenshis-projects/sapphire-blue-web`, del equipo `iamtenshi's 
 - Los DNS del dominio están en Squarespace (`nse1`–`nse4.squarespacedns.com`), no en Vercel. El apex resuelve a los IP de Vercel y `www` a un CNAME de `vercel-dns`.
 - El dominio estaba registrado en otra cuenta de Vercel, que sigue sirviendo la versión anterior del sitio. Hay que quitarlo de esa cuenta antes de que la asignación nueva tome efecto.
 
+## Visibilidad en buscadores de IA
+
+`src/data/seo.ts` centraliza la identidad y los datos estructurados. Los seis planes de su `OfferCatalog` y `/pricing.md` se generan desde `src/data/pricing.ts`. `/llms.txt` ofrece un índice opcional; no es un requisito de Google ni garantiza citas. Estos cambios no alteran el contenido visible de la portada. El diagnóstico, los límites y los pasos de Search Console y medición están en [`docs/ai-search.md`](docs/ai-search.md).
+
 ## Compartir enlaces
 
 - Dominio canónico: `https://www.sapphireblue.studio/`. `vercel.json` configura la redirección permanente del dominio sin `www` al dominio con `www`, conservando la ruta. Mantener el sitio sin protección de acceso para los rastreadores.
