@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
 
 const siteUrl = new URL('/', Astro.site).href;
 const socialImage = new URL('/social-preview-v2.jpg', siteUrl).href;
@@ -56,6 +58,8 @@ const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â
 </script>
 </head>
 <body>
+  <Analytics />
+  <SpeedInsights />
   <slot />
 </body>
 </html>
