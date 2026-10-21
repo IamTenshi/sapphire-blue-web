@@ -14,6 +14,13 @@ test('production styles and fonts avoid render-blocking stylesheet requests', as
   expect((await font.body()).subarray(0, 4).toString()).toBe('wOF2');
 });
 
+test('local builds do not initialize Vercel collection scripts', async ({ request }) => {
+  const response = await request.get('/');
+  expect(response.status()).toBe(200);
+  const html = await response.text();
+  expect(html).not.toMatch(/<vercel-(?:analytics|speed-insights)\b/i);
+});
+
 test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

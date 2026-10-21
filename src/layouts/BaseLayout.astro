@@ -3,6 +3,8 @@ import '../styles/global.css';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 
+// Vercel's collection routes are not available in local dev or preview.
+const enableObservability = import.meta.env.PROD && import.meta.env.VERCEL === '1';
 const siteUrl = new URL('/', Astro.site).href;
 const socialImage = new URL('/social-preview-v2.jpg', siteUrl).href;
 const socialTitle = 'sapphire blue. | Websites, Social Media & Email Marketing';
@@ -58,8 +60,8 @@ const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â
 </script>
 </head>
 <body>
-  <Analytics />
-  <SpeedInsights />
+  {enableObservability && <Analytics />}
+  {enableObservability && <SpeedInsights />}
   <slot />
 </body>
 </html>

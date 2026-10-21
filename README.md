@@ -55,6 +55,7 @@ El proyecto es `iamtenshis-projects/sapphire-blue-web`, del equipo `iamtenshi's 
 - Web Analytics está habilitado en el proyecto y `@vercel/analytics` monta `<Analytics />` en `src/layouts/BaseLayout.astro`. Habilitarlo en el panel añade las rutas `/_vercel/insights/*` en el despliegue siguiente.
 - `@vercel/speed-insights` monta `<SpeedInsights />` en la misma plantilla. Speed Insights funciona en el tier gratuito, con Real Experience Score y 10.000 eventos por 30 días compartidos en el equipo. Speed Insights Plus requiere el plan Pro ($20 al mes por equipo) más $10 al mes por proyecto y $0.65 por cada 10.000 eventos; no está contratado.
 - Los dos componentes son elementos personalizados inertes: solo cargan el script de recogida de Vercel, sin modificar el HTML visible ni las capturas de las pruebas visuales.
+- Solo se montan en builds de Vercel (`PROD` y `VERCEL=1`). En desarrollo y builds locales se omiten para no solicitar rutas `/_vercel/*` que no existen en localhost.
 
 ### Dominio
 
