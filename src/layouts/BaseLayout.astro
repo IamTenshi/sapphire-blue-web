@@ -1,5 +1,11 @@
 ---
 import '../styles/global.css';
+
+const siteUrl = new URL('/', Astro.site).href;
+const socialImage = new URL('/social-preview-v2.jpg', siteUrl).href;
+const socialTitle = 'sapphire blue. | Websites, Social Media & Email Marketing';
+const socialDescription = 'Your whole online presence in one place. Websites, social media and email marketing for small businesses. Set monthly prices, tools included.';
+const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue — sapphireblue.studio';
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -9,27 +15,31 @@ import '../styles/global.css';
 <title>sapphire blue. | Websites, Social Media &amp; Email Marketing for Small Businesses</title>
 <meta name="description" content="sapphire blue. is a marketing studio for small businesses: custom websites, social media management and email campaigns with set monthly prices and tools included.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://sapphireblue.studio/">
+<link rel="canonical" href={siteUrl}>
 <meta name="theme-color" content="#155DFC">
 <meta property="og:site_name" content="sapphire blue.">
-<meta property="og:title" content="sapphire blue. | Websites, social media and email for small businesses">
-<meta property="og:description" content="Websites, social media and email for small businesses. Set monthly prices, tools included, and your whole online presence in one place.">
+<meta property="og:title" content={socialTitle}>
+<meta property="og:description" content={socialDescription}>
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://sapphireblue.studio/">
-<meta property="og:image" content="https://sapphireblue.studio/og-image.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content={siteUrl}>
+<meta property="og:image" content={socialImage}>
+<meta property="og:image:secure_url" content={socialImage}>
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Your whole online presence in one place. sapphireblue.studio">
+<meta property="og:image:alt" content={socialImageAlt}>
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="sapphire blue. | Websites, social media and email for small businesses">
-<meta name="twitter:description" content="Websites, social media and email for small businesses. Set monthly prices, tools included.">
-<meta name="twitter:image" content="https://sapphireblue.studio/og-image.png">
+<meta name="twitter:title" content={socialTitle}>
+<meta name="twitter:description" content={socialDescription}>
+<meta name="twitter:image" content={socialImage}>
+<meta name="twitter:image:alt" content={socialImageAlt}>
 <link rel="icon" type="image/svg+xml" href="/assets/image-1.svg">
 <link rel="preload" href="/fonts/manrope-latin-wght-400-800.woff2" as="font" type="font/woff2" crossorigin>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"WebSite","@id":"https://sapphireblue.studio/#website","url":"https://sapphireblue.studio/","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio","sapphireblue.studio"],"publisher":{"@id":"https://sapphireblue.studio/#org"}},
-{"@type":["Organization","ProfessionalService"],"@id":"https://sapphireblue.studio/#org","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio"],"url":"https://sapphireblue.studio/","logo":"https://sapphireblue.studio/og-image.png","image":"https://sapphireblue.studio/og-image.png","email":"hello@sapphireblue.studio","description":"Marketing studio for small businesses: websites, social media management and email marketing with set monthly prices.","priceRange":"$$","sameAs":["https://www.facebook.com/sapphireblue.studio/","https://www.instagram.com/sapphireblue.studio/"],"makesOffer":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Website design"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Social media management"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Email marketing"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Meta ads management"}}]},
+{"@type":"WebSite","@id":"https://www.sapphireblue.studio/#website","url":"https://www.sapphireblue.studio/","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio","sapphireblue.studio"],"publisher":{"@id":"https://www.sapphireblue.studio/#org"}},
+{"@type":["Organization","ProfessionalService"],"@id":"https://www.sapphireblue.studio/#org","name":"sapphire blue.","alternateName":["Sapphire Blue","Sapphire Blue Studio"],"url":"https://www.sapphireblue.studio/","logo":"https://www.sapphireblue.studio/assets/image-1.svg","image":"https://www.sapphireblue.studio/social-preview-v2.jpg","email":"hello@sapphireblue.studio","description":"Marketing studio for small businesses: websites, social media management and email marketing with set monthly prices.","priceRange":"$$","sameAs":["https://www.facebook.com/sapphireblue.studio/","https://www.instagram.com/sapphireblue.studio/"],"makesOffer":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Website design"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Social media management"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Email marketing"}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Meta ads management"}}]},
 {"@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"What is included in the price?","acceptedAnswer":{"@type":"Answer","text":"Everything listed in your plan, plus the tools to run it. Scheduling, analytics and email platform costs are already covered, so there are no extra subscriptions to pay. Every plan comes with a report. Prices are monthly, in USD."}},
 {"@type":"Question","name":"How does the website process work?","acceptedAnswer":{"@type":"Answer","text":"It starts with a conversation about your business. You get a brand-new site or an update of your current one. Delivery usually takes 1 to 2 weeks. Every site includes custom design, mobile-first layouts, SEO setup and forms that send leads straight to your inbox."}},

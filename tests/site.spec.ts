@@ -19,7 +19,7 @@ test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page).toHaveTitle('sapphire blue. | Websites, Social Media & Email Marketing for Small Businesses');
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://sapphireblue.studio/');
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.sapphireblue.studio/');
   const graph = JSON.parse(await page.locator('script[type="application/ld+json"]').innerText());
   expect(graph['@graph'].map((entry: { '@type': string | string[] }) => entry['@type'])).toEqual(['WebSite', ['Organization', 'ProfessionalService'], 'FAQPage']);
   for (const path of ['/og-image.png', '/robots.txt', '/sitemap.xml']) {

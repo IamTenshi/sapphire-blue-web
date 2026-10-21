@@ -3,5 +3,13 @@
   "framework": "astro",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "sapphireblue.studio" }],
+      "destination": "https://www.sapphireblue.studio/:path*",
+      "permanent": true
+    }
+  ]
 }
