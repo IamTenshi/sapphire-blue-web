@@ -21,6 +21,25 @@ test('local builds do not initialize Vercel collection scripts', async ({ reques
   expect(html).not.toMatch(/<vercel-(?:analytics|speed-insights)\b/i);
 });
 
+test('lazy images with an auto dimension reserve their intrinsic aspect ratio', async ({ request }) => {
+  const response = await request.get('/');
+  expect(response.status()).toBe(200);
+  const html = await response.text();
+  const images = html.match(/<img\b[^>]*>/g) ?? [];
+  const expectedImages = [
+    { src: '/assets/social-media-bubble.png', width: 551, height: 480 },
+    { src: '/assets/sapphire-blue-wordmark.svg', width: 948, height: 143 },
+  ];
+  for (const { src, width, height } of expectedImages) {
+    const image = images.find(tag => tag.includes(`src="${src}"`) && tag.includes('loading="lazy"'));
+    expect(image).toBeDefined();
+    expect(image).toContain(`width="${width}"`);
+    expect(image).toContain(`height="${height}"`);
+    expect(image).toContain(`[aspect-ratio:${width}/${height}]`);
+    expect(html).toContain(`aspect-ratio:${width}/${height}`);
+  }
+});
+
 test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
