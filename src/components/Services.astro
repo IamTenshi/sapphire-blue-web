@@ -1,3 +1,8 @@
+---
+import { Image } from 'astro:assets';
+import socialMediaBubble from '../../public/assets/social-media-bubble.png';
+---
+
 <section id="services" class="wrap sec">
   <div data-reveal class="[display:flex] [flex-wrap:wrap] [justify-content:space-between] [align-items:flex-end] [gap:24px] [margin-bottom:clamp(36px,4vw,56px)]">
     <div class="[display:flex] [flex-direction:column] [gap:18px] [max-width:720px]">
@@ -22,7 +27,7 @@
     </a>
     <a href="#plans" data-tab="social" class="card" data-reveal>
       <div style="background:#F6339A" class="[aspect-ratio:16/10] [border-radius:20px] [display:grid] [place-items:center]">
-        <img src="/assets/social-media-bubble.png" alt="" width="551" height="480" loading="lazy" class="[width:110px] [height:auto] [aspect-ratio:551/480] [display:block]">
+        <Image src={socialMediaBubble} alt="" width={110} widths={[110, 220, 330]} sizes="110px" format="webp" loading="lazy" class="[width:110px] [height:auto] [aspect-ratio:551/480] [display:block]" />
       </div>
       <div class="[padding:0_14px] [display:flex] [flex-direction:column] [gap:12px]">
         <h3>Social media</h3>

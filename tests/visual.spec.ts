@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 // These reference images are captured from the pre-migration HTML, not Astro.
+// Only the social icon pixels were updated for the responsive WebP optimization.
 // BASELINE_URL is only for explicitly recapturing that original reference.
 for (const width of [390, 819, 820, 1440]) {
   test(`original design at ${width}px`, async ({ page }) => {
