@@ -78,6 +78,8 @@ La ampliación en `feat/seo-geo-growth` conserva el diseño y el copy comercial.
 
 ### Eventos de marketing
 
+El código base de Meta Pixel está en `src/layouts/BaseLayout.astro`: carga `fbevents.js` y registra un `PageView` por carga de página en todas las páginas que usan la plantilla, incluida la 404. El respaldo `<noscript>` está en el cuerpo del documento para mantener HTML válido. También se incluye en desarrollo y previews; no se han añadido eventos de conversión ni coincidencias avanzadas con datos personales. El sitio no dispone de gestor de consentimiento: revisar los requisitos de privacidad y consentimiento antes de desplegar esta integración. Tras publicar, comprobar con Meta Pixel Helper y «Probar eventos» en el Administrador de eventos; las pruebas locales interceptan Meta y no acreditan recepción real.
+
 Por defecto, `document` emite `sapphire:marketing` con `{ name, properties }`, sin cookies, persistencia ni solicitudes adicionales. **Esto es instrumentación, no un panel de conversiones:** sin un receptor autorizado no se almacenan eventos. No se incluyen nombres, correos, teléfonos, mensajes ni parámetros de campaña en sus propiedades.
 
 Vercel reserva los eventos personalizados para Pro y Enterprise. Solo después de confirmar plan, coste y requisitos de privacidad se puede configurar `PUBLIC_ENABLE_CUSTOM_EVENTS=true`. Se enviarán con el SDK ya instalado únicamente en builds de Vercel con `VERCEL_ENV=production`; quedan desactivados en desarrollo, builds locales sin esas variables y previews. No se ha activado la variable en Vercel ni contratado un plan.
