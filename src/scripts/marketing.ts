@@ -6,8 +6,18 @@ interface MarketingEvents {
   plan_selected: { service: 'social' | 'email'; plan: PlanId };
   plan_built: { social: PlanSelection; email: PlanSelection; extra_platforms: number; ads: AdId };
   form_submit: { needs: string };
-  form_submission_unverified: { needs: string };
-  form_error: { reason: 'network_or_timeout' };
+  form_success: { needs: string };
+  form_error: { reason: 'network_timeout_or_rejection' };
+}
+
+// Only call after Apps Script's success response, never on a click or attempt.
+export function recordMetaLead() {
+  const pixelWindow = window as Window & { fbq?: (command: 'track', event: 'Lead') => void };
+  try {
+    pixelWindow.fbq?.('track', 'Lead');
+  } catch {
+    // A blocked or broken pixel must not turn a confirmed submission into an error.
+  }
 }
 
 // Local integration hook only by default: no storage, cookies or new requests.

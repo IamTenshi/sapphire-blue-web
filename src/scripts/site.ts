@@ -1,5 +1,5 @@
 import { ADS, EMAIL, NEEDS, SOCIAL, calculate, fmt, type Need, type PlanId, type PlanSelection, type Selection } from '../data/pricing';
-import { recordMarketingEvent } from './marketing';
+import { recordMarketingEvent, recordMetaLead } from './marketing';
 
 // Required elements belong to this page; fail explicitly if the template drifts.
 function $<T extends HTMLElement = HTMLElement>(selector: string, root: ParentNode = document): T {
@@ -211,19 +211,20 @@ form.addEventListener('submit', async e => {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 15000);
   try {
-    // The existing Apps Script endpoint has no readable CORS response. Await
-    // transport errors, but don't mislabel an opaque response as a verified lead.
-    const response = await fetch('https://script.google.com/macros/s/AKfycbxTrBiAcoSGTOAf96VUBIAyZEBq7e3N7tNg6ilLPrzFki71ijlj-dgNFLQ1bKLtttnh2A/exec', { method: 'POST', mode: 'no-cors', body, signal: controller.signal });
-    if (response.type !== 'opaque' && !response.ok) throw new Error('Submission rejected');
+    // Keep a simple form POST (no custom headers/preflight) and follow Google's
+    // ContentService redirect. Apps Script returns "ok" after saving and notifying.
+    const response = await fetch('https://script.google.com/macros/s/AKfycbxTrBiAcoSGTOAf96VUBIAyZEBq7e3N7tNg6ilLPrzFki71ijlj-dgNFLQ1bKLtttnh2A/exec', { method: 'POST', mode: 'cors', redirect: 'follow', credentials: 'omit', body, signal: controller.signal });
+    if (!response.ok || (await response.text()).trim() !== 'ok') throw new Error('Submission not confirmed');
+    recordMetaLead();
     form.hidden = true;
     const sent = $('#sent');
     sent.hidden = false;
     sent.style.display = 'flex';
     $('#sent-heading').focus();
-    recordMarketingEvent('form_submission_unverified', { needs: selected.join(',') });
+    recordMarketingEvent('form_success', { needs: selected.join(',') });
   } catch {
     $('#submitError').hidden = false;
-    recordMarketingEvent('form_error', { reason: 'network_or_timeout' });
+    recordMarketingEvent('form_error', { reason: 'network_timeout_or_rejection' });
   } finally {
     window.clearTimeout(timeout);
     submitting = false;
