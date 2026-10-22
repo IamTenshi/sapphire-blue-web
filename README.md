@@ -27,7 +27,7 @@ pnpm dev
 - `src/data/pricing.ts`: precios, tipos y cálculo compartidos por las tarjetas y la calculadora.
 - `src/data/faq.ts`: preguntas y respuestas compartidas por el contenido visible y Schema.
 - `src/scripts/site.ts`: navegación, pestañas, FAQ, calculadora, formulario y animaciones.
-- `src/scripts/marketing.ts`: eventos del embudo sin datos personales, sin envío externo por defecto.
+- `src/scripts/marketing.ts`: eventos locales del embudo y evento `Lead` de Meta, sin datos personales del formulario.
 - `src/styles/global.css`: reglas originales y configuración de Tailwind.
 - `public/`: imágenes, fuentes e iconos, con sus URLs públicas preservadas.
 - `src/pages/robots.txt.ts` y `src/pages/sitemap.xml.ts`: archivos estáticos generados desde `Astro.site`. `indexablePaths` en `src/data/seo.ts` enumera las páginas HTML indexables; al añadir páginas hay que actualizarlo.
@@ -48,7 +48,11 @@ pnpm test
 
 Las pruebas usan un build nuevo en `http://127.0.0.1:4322`, sin reutilizar servidores existentes. Se puede cambiar el puerto con `PLAYWRIGHT_PORT=4338 pnpm test`. No se deben actualizar las capturas de referencia para ocultar regresiones.
 
-Las pruebas del formulario interceptan las solicitudes: no envían contactos reales. En producción se conserva el endpoint de Google Apps Script y el envío `no-cors`. El formulario espera la respuesta de transporte, bloquea envíos simultáneos y recupera los datos ante errores o un timeout de 15 segundos. Una respuesta opaca **no confirma recepción ni entrega**: el estado final lo indica expresamente y ofrece contacto por email. Confirmar leads exige un backend con respuesta verificable; no se ha cambiado ni probado el Apps Script real.
+Las pruebas del formulario interceptan las solicitudes: no envían contactos reales ni conversiones reales de Meta. Se conserva el endpoint de Google Apps Script y el cuerpo `URLSearchParams`, pero se usa CORS para leer su confirmación. El contrato del Apps Script facilitado es texto `ok`, devuelto después de guardar la fila en `Respuestas` y llamar a `MailApp.sendEmail`. Solo una respuesta HTTP correcta con ese texto confirma el envío y registra `Lead`; un HTTP 200 vacío, HTML de error o una respuesta opaca no bastan. El formulario bloquea envíos simultáneos y conserva los datos ante errores o un timeout de 15 segundos.
+
+Validación autorizada del 22 de octubre de 2026: un único envío real, identificado como `SAPPHIRE-INTEGRATION-2026-10-22T20:11:51.156Z`, devolvió HTTP 200 y texto `ok` legible mediante CORS, sin sesión de Google y tras la redirección a `script.googleusercontent.com`. Se usó el build local servido mediante interceptación del navegador bajo el origen `https://www.sapphireblue.studio`, sin desplegar la web; las solicitudes a Meta y Google Analytics estuvieron bloqueadas. No se modificó ni desplegó Apps Script. No se inspeccionaron su configuración administrativa, la hoja ni la bandeja de correo: la confirmación se basa en su contrato, no en una comprobación directa de esos destinos.
+
+Antes de publicar, el propietario debe confirmar que la versión desplegada corresponde al código facilitado, con ejecución como propietario y acceso público («Cualquier persona»). El POST no añade cabeceras personalizadas para evitar preflight. Si falla CORS, se muestra el error sin registrar `Lead`: no se degrada a `no-cors` ni se reintenta automáticamente, porque la fila podría haberse guardado aunque no se leyera la respuesta. El Apps Script actual no implementa idempotencia entre reintentos.
 
 ## Vercel
 
@@ -78,7 +82,7 @@ La ampliación en `feat/seo-geo-growth` conserva el diseño y el copy comercial.
 
 ### Eventos de marketing
 
-El código base de Meta Pixel está en `src/layouts/BaseLayout.astro`: carga `fbevents.js` y registra un `PageView` por carga de página en todas las páginas que usan la plantilla, incluida la 404. El respaldo `<noscript>` está en el cuerpo del documento para mantener HTML válido. También se incluye en desarrollo y previews; no se han añadido eventos de conversión ni coincidencias avanzadas con datos personales. El sitio no dispone de gestor de consentimiento: revisar los requisitos de privacidad y consentimiento antes de desplegar esta integración. Tras publicar, comprobar con Meta Pixel Helper y «Probar eventos» en el Administrador de eventos; las pruebas locales interceptan Meta y no acreditan recepción real.
+El código base de Meta Pixel está en `src/layouts/BaseLayout.astro`: carga `fbevents.js` y registra un `PageView` por carga de página en todas las páginas que usan la plantilla, incluida la 404. El respaldo `<noscript>` está en el cuerpo del documento para mantener HTML válido. También se incluye en desarrollo y previews. `src/scripts/site.ts` llama a `recordMetaLead()` únicamente después de verificar la respuesta `ok` del formulario; este ejecuta `fbq('track', 'Lead')` sin datos personales ni coincidencias avanzadas. Nunca se registra en el clic, ante campos inválidos, errores o respuestas ilegibles. Un píxel ausente o que lance un error no altera el envío confirmado. El sitio no dispone de gestor de consentimiento: revisar los requisitos de privacidad y consentimiento antes de desplegar esta integración. Tras publicar, comprobar con Meta Pixel Helper y «Probar eventos» en el Administrador de eventos; las pruebas locales interceptan Meta y no acreditan recepción real.
 
 Por defecto, `document` emite `sapphire:marketing` con `{ name, properties }`, sin cookies, persistencia ni solicitudes adicionales. **Esto es instrumentación, no un panel de conversiones:** sin un receptor autorizado no se almacenan eventos. No se incluyen nombres, correos, teléfonos, mensajes ni parámetros de campaña en sus propiedades.
 

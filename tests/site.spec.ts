@@ -109,9 +109,12 @@ test('mobile menu retains its original breakpoint and navigation', async ({ page
 
 test('form preserves validation, payload and success/reset behavior without sending real leads', async ({ page }) => {
   let payload = '';
+  await page.route('https://connect.facebook.net/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
+  await page.route('https://www.facebook.com/**', route => route.abort());
+  await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
   await page.route('https://script.google.com/**', async route => {
     payload = route.request().postData() ?? '';
-    await route.fulfill({ status: 200, body: '' });
+    await route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, body: 'ok' });
   });
   await page.goto('/');
   await page.locator('input[name="name"]').fill('Migration test');

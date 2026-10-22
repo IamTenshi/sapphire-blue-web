@@ -4,6 +4,13 @@ import { indexablePaths } from '../src/data/seo';
 const home = 'https://www.sapphireblue.studio/';
 const endpoint = 'https://script.google.com/**';
 
+test.beforeEach(async ({ page }) => {
+  // Successful form tests must never send real Meta conversions.
+  await page.route('https://connect.facebook.net/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
+  await page.route('https://www.facebook.com/**', route => route.abort());
+  await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
+});
+
 async function fillContact(page: Page) {
   await page.locator('input[name="name"]').fill('Private test person');
   await page.locator('input[name="email"]').fill('private-test@example.com');
@@ -166,7 +173,7 @@ test('submission waits for the network, prevents duplicates and resets all needs
   await page.route(endpoint, async route => {
     submissions++;
     await gate;
-    await route.fulfill({ status: 200, body: '' });
+    await route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, body: 'ok' });
   });
   await page.goto('/');
   await fillContact(page);
@@ -179,7 +186,7 @@ test('submission waits for the network, prevents duplicates and resets all needs
   await expect.poll(() => submissions).toBe(1);
   release();
   await expect(page.locator('#sent')).toBeVisible();
-  await expect(page.locator('#sent')).toContainText('delivery can’t be confirmed');
+  await expect(page.locator('#sent')).toContainText('Your request has been received.');
   await expect(page.locator('#sent-heading')).toBeFocused();
   await page.locator('#again').click();
   await expect(page.locator('[data-need="website"]')).toHaveAttribute('aria-pressed', 'true');
@@ -198,7 +205,7 @@ test('network failure preserves the form and permits a deliberate retry', async 
   await expect(page.locator('textarea')).toHaveValue('Private message not for analytics');
   await expect(page.locator('button[type="submit"]')).toBeEnabled();
   await expect(page.locator('#form')).not.toHaveAttribute('aria-busy');
-  await page.route(endpoint, route => route.fulfill({ status: 200, body: '' }));
+  await page.route(endpoint, route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, body: 'ok' }));
   await page.locator('button[type="submit"]').click();
   await expect(page.locator('#sent')).toBeVisible();
   await expect(page.locator('#submitError')).toBeHidden();
@@ -227,7 +234,7 @@ test('marketing events distinguish attempts from delivery and exclude personal d
   page.on('request', request => {
     if (/\/_vercel\/insights|google-analytics\.com/.test(request.url())) analyticsRequests.push(request.url());
   });
-  await page.route(endpoint, route => route.fulfill({ status: 200, body: '' }));
+  await page.route(endpoint, route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' }, body: 'ok' }));
   await page.goto('/');
   await page.locator('[data-plan="social:starter"]').click();
   await fillContact(page);
@@ -237,7 +244,7 @@ test('marketing events distinguish attempts from delivery and exclude personal d
   expect(events).toContainEqual({ name: 'plan_selected', properties: { service: 'social', plan: 'starter' } });
   expect(events).toContainEqual({ name: 'contact_click', properties: { source: 'plan' } });
   expect(events).toContainEqual({ name: 'form_submit', properties: { needs: 'social' } });
-  expect(events).toContainEqual({ name: 'form_submission_unverified', properties: { needs: 'social' } });
+  expect(events).toContainEqual({ name: 'form_success', properties: { needs: 'social' } });
   expect(JSON.stringify(events)).not.toMatch(/Private|private-test|example\.com|utm_/);
   expect(analyticsRequests).toEqual([]);
 });
