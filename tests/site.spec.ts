@@ -27,18 +27,67 @@ test('lazy images with an auto dimension reserve their intrinsic aspect ratio', 
   const html = await response.text();
   const images = html.match(/<img\b[^>]*>/g) ?? [];
   const expectedImages = [
-    { src: '/assets/social-media-bubble.png', width: 551, height: 480 },
-    { src: '/assets/sapphire-blue-wordmark.svg', width: 948, height: 143 },
+    { srcPrefix: '/_astro/social-media-bubble.', width: 110, height: 96, aspectRatio: '551/480' },
+    { srcPrefix: '/assets/sapphire-blue-wordmark.svg', width: 948, height: 143, aspectRatio: '948/143' },
   ];
-  for (const { src, width, height } of expectedImages) {
-    const image = images.find(tag => tag.includes(`src="${src}"`) && tag.includes('loading="lazy"'));
+  for (const { srcPrefix, width, height, aspectRatio } of expectedImages) {
+    const image = images.find(tag => tag.includes(`src="${srcPrefix}`) && tag.includes('loading="lazy"'));
     expect(image).toBeDefined();
     expect(image).toContain(`width="${width}"`);
     expect(image).toContain(`height="${height}"`);
-    expect(image).toContain(`[aspect-ratio:${width}/${height}]`);
-    expect(html).toContain(`aspect-ratio:${width}/${height}`);
+    expect(image).toContain(`[aspect-ratio:${aspectRatio}]`);
+    expect(html).toContain(`aspect-ratio:${aspectRatio}`);
   }
 });
+
+for (const density of [1, 2, 3]) {
+  test.describe(`social media icon at ${density}x density`, () => {
+    test.use({ deviceScaleFactor: density });
+
+    test('loads a correctly sized WebP instead of the original PNG', async ({ page, request }) => {
+      const originalRequests: string[] = [];
+      page.on('request', request => {
+        if (new URL(request.url()).pathname === '/assets/social-media-bubble.png') {
+          originalRequests.push(request.url());
+        }
+      });
+      await page.goto('/');
+      const icon = page.locator('#services img');
+      await expect(icon).toHaveAttribute('alt', '');
+      await expect(icon).toHaveAttribute('loading', 'lazy');
+      await expect(icon).toHaveAttribute('sizes', '110px');
+      const { currentSrc, candidates, width, height } = await icon.evaluate(async element => {
+        const image = element as HTMLImageElement;
+        image.loading = 'eager';
+        await image.decode();
+        const rect = image.getBoundingClientRect();
+        return {
+          currentSrc: image.currentSrc,
+          candidates: image.srcset.split(',').map(candidate => candidate.trim().split(/\s+/)),
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+      expect(candidates.map(([, descriptor]) => descriptor)).toEqual(['110w', '220w', '330w']);
+      const candidate = candidates.find(([, descriptor]) => descriptor === `${110 * density}w`);
+      expect(currentSrc).toBe(new URL(candidate![0], page.url()).href);
+      expect(width).toBe(110);
+      expect(height).toBeCloseTo(110 * 480 / 551, 1);
+      const response = await request.get(currentSrc);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toContain('image/webp');
+      expect((await response.body()).length).toBeLessThan(8 * 1024);
+      const dimensions = await page.evaluate(async src => {
+        const image = await createImageBitmap(await (await fetch(src)).blob());
+        const dimensions = { width: image.width, height: image.height };
+        image.close();
+        return dimensions;
+      }, currentSrc);
+      expect(dimensions).toEqual({ width: 110 * density, height: 96 * density });
+      expect(originalRequests).toEqual([]);
+    });
+  });
+}
 
 test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   const errors: string[] = [];
@@ -48,7 +97,7 @@ test('SEO and public asset URLs remain intact', async ({ page, request }) => {
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.sapphireblue.studio/');
   const graph = JSON.parse(await page.locator('script[type="application/ld+json"]').innerText());
   expect(graph['@graph'].map((entry: { '@type': string }) => entry['@type'])).toEqual(['WebSite', 'Organization', 'WebPage', 'OfferCatalog', 'FAQPage']);
-  for (const path of ['/og-image.png', '/robots.txt', '/sitemap.xml']) {
+  for (const path of ['/og-image.png', '/assets/social-media-bubble.png', '/robots.txt', '/sitemap.xml']) {
     expect((await request.get(path)).status()).toBe(200);
   }
   // Off-screen lazy images need an explicit load before their decode can be

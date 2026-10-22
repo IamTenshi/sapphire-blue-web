@@ -29,7 +29,7 @@ pnpm dev
 - `src/scripts/site.ts`: navegación, pestañas, FAQ, calculadora, formulario y animaciones.
 - `src/scripts/marketing.ts`: eventos locales del embudo y evento `Lead` de Meta, sin datos personales del formulario.
 - `src/styles/global.css`: reglas originales y configuración de Tailwind.
-- `public/`: imágenes, fuentes e iconos, con sus URLs públicas preservadas.
+- `public/`: imágenes, fuentes e iconos, con sus URLs públicas preservadas. El icono de redes sociales se importa con `astro:assets` para generar WebP de 110, 220 y 330 px; `srcset` y `sizes` evitan descargar el PNG original en la página.
 - `src/pages/robots.txt.ts` y `src/pages/sitemap.xml.ts`: archivos estáticos generados desde `Astro.site`. `indexablePaths` en `src/data/seo.ts` enumera las páginas HTML indexables; al añadir páginas hay que actualizarlo.
 - `src/pages/404.astro`: página de error con `noindex`, sin canonical ni Schema de la portada.
 
@@ -38,6 +38,8 @@ pnpm dev
 La migración no rediseña la página. Las propiedades arbitrarias de Tailwind conservan los valores CSS originales, sin redondearlos a escalas predefinidas. Los fondos complejos y determinadas prioridades de estilos se mantienen como CSS literal. Preflight está desactivado para no modificar los estilos predeterminados del navegador. Los archivos de imagen se extrajeron de sus data URIs sin cambiar sus bytes.
 
 Las capturas de referencia en `tests/visual.spec.ts-snapshots/` proceden del HTML anterior a la migración. Las pruebas comparan páginas completas a 390, 819, 820 y 1440 px, además de los planes de email y la calculadora configurada a 390 y 1440 px, con tolerancia de **cero píxeles**. Usan Chromium en Linux, la fuente Manrope de Google Fonts (alojada localmente en `public/fonts/`, con su licencia OFL) y movimiento reducido para evitar estados intermedios de animación. Para reproducirlas, utiliza el mismo navegador y sistema; otros sistemas pueden rasterizar fuentes de forma distinta.
+
+La optimización del icono de redes sociales actualizó únicamente sus píxeles en las cuatro referencias de página completa, tras verificar que no había diferencias fuera de su rectángulo de 110 × 96 px. Se conservan sus dimensiones y la composición original.
 
 Antes de ejecutar pruebas por primera vez:
 
