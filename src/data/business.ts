@@ -15,7 +15,7 @@ export const business = {
 } as const;
 
 export const noticeVersions = {
-  privacy: '2026-10-25',
+  privacy: '2026-10-26',
   email: 'email-2026-10-25',
   sms: 'sms-2026-10-25',
 } as const;
@@ -52,7 +52,7 @@ export const providers = {
     name: 'Google Analytics',
     status: 'Optional — analytics preference',
     purpose: 'Understand website usage and selected interactions when analytics is allowed.',
-    information: 'Page and interaction information, together with technical and browser information.',
+    information: 'Page and interaction information, approved campaign parameters, browser identifiers and cookies, and technical information.',
   },
   vercelMeasurement: {
     name: 'Vercel Web Analytics and Speed Insights',
@@ -64,7 +64,7 @@ export const providers = {
     name: 'Meta Pixel',
     status: 'Optional — advertising preference',
     purpose: 'Measure advertising-related visits and selected interactions when advertising is allowed.',
-    information: 'Page and interaction information, together with technical and browser information.',
+    information: 'Page and interaction information, approved campaign and click identifiers, browser identifiers and cookies, and technical information.',
   },
   marketing: {
     name: 'Brevo',

@@ -69,6 +69,20 @@ import {
     <li><strong>Global Privacy Control (GPC):</strong> a detected GPC signal is treated as an objection to advertising tracking. It does not automatically reject analytics, which has its own separate choice.</li>
   </ul>
   <p>
+    After analytics permission, the official Google tag may use first-party cookies and browser identifiers
+    (such as <code>_ga</code> and property-specific Google Analytics cookies) to recognize visits across pages.
+    After advertising permission, the official Meta Pixel may use identifiers such as <code>_fbp</code> and
+    <code>_fbc</code> when available. Approved campaign parameters and click identifiers may be processed for attribution.
+    These are optional measurement tools, not necessary inquiry storage, and are not described as anonymous.
+    Their cookies have provider-defined lifetimes and can remain in the browser after a tracking choice expires or is withdrawn.
+  </p>
+  <p>
+    Unlike isolated measurement, these SDKs execute on the page and can access browser and page information.
+    We do not include inquiry names, emails, phone numbers or messages in the conversion events we send.
+    Meta automatic configuration is disabled in this integration, and Google Signals and ad personalization are disabled.
+    Provider-side automatic collection settings must also be reviewed before publication; this notice does not certify those account settings.
+  </p>
+  <p>
     Your browser's <code>localStorage</code> holds these preferences under <code>{trackingPreferences.key}</code>,
     using version {trackingPreferences.version} with a {trackingPreferences.ttlDays}-day validity period.
     The choice belongs to that browser and device. Clearing local storage removes the saved choice; without a valid choice, optional tools stay off unless you allow them.

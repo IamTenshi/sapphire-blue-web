@@ -1,43 +1,86 @@
-# Optional measurement architecture
+# Consent-gated official measurement SDKs
 
-## Invariants
+## Current architecture — 26 October 2026
 
-- No optional vendor script, beacon, preconnect or iframe before a valid choice.
-- Necessary local storage `sapphire.tracking-preferences` is not marketing consent.
-- Schema version **1**, lifetime **180 days** from `savedAt`, exact millisecond expiry. A version change, malformed data, future timestamp, extra fields, expired preference or failed read denies both categories. Save is read back before applying. No implicit session-only grant on storage failure.
-- `analytics` authorizes Google Analytics and eligible Vercel measurement; `advertising` authorizes Meta Pixel. Neither authorizes email or SMS. GPC vetoes advertising, including a stored grant, and never grants analytics.
-- Production requires all of: Astro production build, `VERCEL=1`, `VERCEL_ENV=production`, and runtime origin `https://www.sapphireblue.studio`. No wildcard hosts, public preview override or test opt-in in shipped code.
-- Banner does not take keyboard focus. Native modal settings have labelled independent checkboxes, Escape/Close, keyboard focus containment and return. Footer settings remain available on content routes and 404. No JavaScript means no optional measurement.
+The isolated iframe and manually constructed Meta requests have been removed.
+The official Google tag (`G-L07HB79EBQ`) and Meta browser SDK
+(`1053877131029984`) execute in the main document only after the corresponding
+permission, in the canonical Vercel production deployment. Development, previews,
+JavaScript-disabled pages and missing/invalid preferences never load them.
 
-## Containing automatic data collection
+Preferences are now **version 2**, valid for **180 days**. Version 1 authorized a
+different, isolated architecture and is rejected; visitors must make a new choice.
+Analytics and advertising remain independent. GPC vetoes advertising, never grants
+analytics, and does not enroll anyone in email or SMS. Persistence is verified
+before permission becomes effective. The existing denial-only safeguards cover
+failed withdrawals across ordinary site navigation.
 
-`src/pages/measurement.astro` is an inert noindex document. Only the manager creates a hidden `sandbox="allow-scripts"` iframe with `referrerpolicy="no-referrer"`. **No `allow-same-origin`**: providers cannot read the parent URL, referrer, fields, DOM, cookies or local storage. Direct visits do not initialize providers. A source/origin-checked handshake transfers a private MessagePort; only allowlisted page paths, independent booleans and random submission IDs cross it. No names, emails, phones, messages, query strings, fragments or user-defined properties.
+## Measurement and attribution after permission
 
-`public/measurement-frame.js` is a classic script (not an opaque-origin ES module). It initializes each authorized category once per document:
+- **Google:** basic consent mode. There is no Google SDK or denied-consent ping
+  before analytics permission. After the choice, defaults and the consent update
+  are queued before configuration and SDK loading. `analytics_storage` is granted; Google
+  ad storage, ad user data and ad personalization remain denied. Signals and ad
+  personalization are disabled. No fresh `client_id` is forced and no
+  `client_storage: none` override is used: Google can maintain its ordinary
+  first-party browser/session identifiers. An explicit `page_view` is queued once
+  per document with automatic initial pageview disabled.
+- **Meta:** the official `fbevents.js` bootstrap, `init` and `PageView` run after
+  advertising permission only. `autoConfig` is disabled before initialization.
+  No advanced-matching fields or contact data are passed to `init` or `Lead`.
+  Ordinary SDK cookies/click identifiers may now participate in attribution.
+  There is still no Conversion API or noscript fallback.
+- **Attribution context:** recognized page paths and an allowlist of campaign/click
+  parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_id`, `utm_term`,
+  `utm_content`, `gclid`, `gbraid`, `wbraid`, `fbclid`) may be measured. Values have
+  bounded lengths and restricted characters. Unexpected queries, private paths,
+  fragments or referrers suppress SDK initialization rather than relying on event
+  overrides: SDKs can read the actual document. Campaign values must never contain
+  personal information. Standard identifiers do not guarantee perfect attribution.
 
-- Google `G-L07HB79EBQ`: gtag loaded only with analytics permission; no parent forms or links to auto-capture. Explicit sanitized `page_location`, empty `page_referrer`, generic title, disabled signals/ad personalization, automatic initial pageview disabled. `client_storage: none`, denied vendor storage and a fresh nonpersistent client ID deliberately avoid persistent Google cookies; analytics will not have normal cross-page session attribution. Explicit `page_view` and `generate_lead` only. CSP restricts collection destinations. No advanced consent-mode pings before site permission: gtag itself is absent.
-- Meta `1053877131029984`: the previous `fbevents.js` SDK and noscript pixel are removed. JS uses the browser Pixel GET transport `/tr/` with an explicit, allowlisted document location, empty referrer, optional random event ID and no credentials. **No Meta automatic event detection, advanced matching, fbp/fbc, browser SDK or Conversion API**. Only `PageView` and confirmed `Lead`. This intentionally limits attribution and must be reviewed by the operator before publication. Mocked tests verify outgoing requests, not Meta acceptance, deduplication in its account, billing or attribution accuracy. No real conversion was sent during this project.
+**The SDKs are no longer isolated from the DOM, form or browser storage.** Tests
+cannot certify arbitrary vendor code or remote account configuration. Before
+publication, review/disable Google enhanced measurement of forms, user-provided
+data collection, unwanted automatic events, Meta automatic events/advanced
+matching, account advertising links and other unapproved collection. Provider
+configuration is not silently changed by this repository. Re-review the public
+notice if enabling additional features. No claim of anonymity is made.
 
-Google/Meta route context is `/`, `/privacy`, `/sms-terms` or the constant `/404`; unknown paths never become telemetry. The iframe URL is fixed, without user parameters. Responses or error messages from the contact endpoint never cross the port.
+## Confirmed conversions, withdrawal and failures
+
+The existing inquiry POST and HTTP-success + text `ok` contract are unchanged.
+At confirmation, `Lead` requires current advertising permission and
+`generate_lead` current analytics permission. Consumed submission IDs prevent
+duplicate calls, including when no permission exists. There is no lead buffering
+or replay after a later grant or SDK load. A blocked/slow SDK can lose a conversion;
+measurement failures never change inquiry success. Google and Meta failures are
+handled independently.
+
+Withdrawal, expiration and changes from another tab are rechecked on events,
+navigation, focus and a lightweight GPC poll. A loaded SDK triggers a full-page
+restart after Google measurement is disabled and Meta consent is revoked. The new
+document rechecks permission before loading anything. Unsaved form input can be
+lost on restart. Earlier requests cannot be recalled. Provider cookies/records are
+not automatically erased by withdrawal; browser/provider controls remain separate.
 
 ## Vercel
 
-The installed `@vercel/analytics` and `@vercel/speed-insights` packages are dynamically imported and injected only with analytics permission. No unconditional Astro components remain. Web Analytics `disableAutoTrack: true` plus one explicit pageview avoids duplicate views. Before-send middleware checks current permission again and rewrites URLs/routes to the fixed allowlist; denial returns null. Custom events additionally require `PUBLIC_ENABLE_CUSTOM_EVENTS=true` and a supported Vercel plan; the example stays false.
+Vercel Analytics and Speed Insights retain their stricter existing safe-context
+gate, including suppression on campaign queries or unsafe referrers. Both require
+analytics permission, recheck it before sending, and sanitize URLs. Custom events
+also require `PUBLIC_ENABLE_CUSTOM_EVENTS=true` and a supported plan; the example
+remains false. Hosting/security logs are separate from optional analytics.
 
-Before-send does not expose all automatic fields (notably referrer). Therefore neither Vercel SDK is loaded when the initial location has a query, unknown path, unapproved fragment, or an unsafe/noncanonical referrer. This **suppresses measurement**, not user content or inquiries. A later unsafe history/hash change restarts the document; the next document suppresses Vercel. Safe page fragments are limited to existing section IDs. HTTP referrers for the document are suppressed by a referrer meta policy. Hosting access/security logs are distinct from optional analytics and cannot be controlled by this browser manager.
+## Verification and external activation gates
 
-## Withdrawal, expiration and races
+Browser fixtures block external traffic and replace SDKs/endpoints with controlled
+substitutes. Tests exercise loading, initialization options, independent choices,
+attribution parameters, withdrawal, version migration, conversion gating and
+failures. They do **not** prove vendor ingestion, real cookies, session attribution,
+matching quality, campaign optimization or remote account settings. No real
+contacts, subscriptions, SMS or conversions are needed for these tests.
 
-Preferences are read again for every conversion/custom event, when dynamic imports resolve, on storage/focus/visibility/hash/history changes, and by a single 1-second GPC monitor. Expiry has a bounded timer. Only additions enable a category without restarting; existing categories do not reinitialize or repeat pageviews. Any effective withdrawal removes the frame/port synchronously and reloads because Vercel has no supported complete teardown. Remaining authorized categories may record the new document's pageview, not a replayed lead. Previously transmitted requests cannot be recalled.
-
-If writing a withdrawal fails, denial-only necessary safeguards keep subsequent documents off even if the browser still exposes an old grant: session storage `sapphire.tracking-blocked`, first-party cookie `sapphire_tracking_blocked` (Secure, SameSite=Lax, Path=/, 180-day maximum), and the nonpersonal `sapphire-tracking-off=1` query marker carried through internal links, including new tabs. If all writes are unavailable, ordinary site navigation still carries the URL veto. A static site cannot preserve it after the visitor clears all browser state or manually removes the marker with every storage mechanism unavailable. A newly saved choice is verified through the raw schema-validated storage reader; only then are safety markers cleared. This deliberately separates effective authorization from persistence verification. No claim is made that third-party cookies can be deleted. Withdrawal does not automatically erase vendor records.
-
-Only the confirmed CORS HTTP-success + trimmed text `ok` path calls `recordConfirmedLead(uuid)`. A consumed-ID set prevents duplicate calls, even when no category is allowed. No conversion buffering or retrospective replay. A provider not ready at confirmation may lose a measurement; delivery of an inquiry never depends on measurement success. There is no claim of cross-retry Apps Script idempotency.
-
-## Verification without external effects
-
-`tests/fixtures.ts` aborts nonlocal browser requests by default, before navigation. Canonical-origin tests mirror a **local** static build and fulfill Google/Meta/Vercel scripts/endpoints with deterministic substitutes; Apps Script and its redirect host are blocked unless explicitly mocked. No test sends real contacts, subscriptions, SMS or conversions. Service workers are disabled. Tests inspect script initialization, sandbox boundaries, request URLs, bodies and headers—not just UI callbacks.
-
-Production-shaped test HTML is compiled with Vercel build flags and custom events enabled in the local web server only; runtime origin checks still deny localhost. Preview/development policy is tested with disabled build flags, plus actual separate build inspections during integration. This is not a deployment or proof of provider-side account configuration. Changes to SDK versions, CSP, transports or account automatic-event settings require renewed review.
-
-See `docs/contact-permissions.md` for the separate, currently disabled commercial-channel gates. Legal review should assess US SMS sender rules, email identification/postal address/unsubscribe requirements, applicable Dominican/US privacy duties, international access and retention obligations; this code makes no universal compliance claim.
+Owner-controlled verification in Google and Meta is required before relying on the
+statistics. Further live testing requires authorization and must avoid synthetic
+production conversions. Sheets/Brevo permission persistence and channel launch
+gates remain separate, unchanged work; see `contact-permissions.md`.

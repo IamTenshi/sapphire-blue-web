@@ -1,12 +1,14 @@
 import type { APIRequestContext, Page } from '@playwright/test';
-import { TRACKING_ORIGIN, TRACKING_STORAGE_KEY, TRACKING_TTL_MS } from '../src/data/tracking';
+import { readFile } from 'node:fs/promises';
+import { extname, resolve, sep } from 'node:path';
+import { TRACKING_ORIGIN, TRACKING_STORAGE_KEY, TRACKING_TTL_MS, TRACKING_VERSION } from '../src/data/tracking';
 
 export { TRACKING_ORIGIN as origin };
 export const endpoint = 'https://script.google.com/**';
 export const cors = { 'access-control-allow-origin': '*' };
 
 export function preference(analytics: boolean, advertising: boolean, savedAt = Date.now()) {
-  return { version: 1, savedAt, expiresAt: savedAt + TRACKING_TTL_MS, analytics, advertising };
+  return { version: TRACKING_VERSION, savedAt, expiresAt: savedAt + TRACKING_TTL_MS, analytics, advertising };
 }
 
 export async function seed(page: Page, value: unknown) {
@@ -25,6 +27,7 @@ export async function fillContact(page: Page) {
 const googleMock = `(() => {
   let config = {};
   function command(...args) {
+    (window.googleCommands ||= []).push(args);
     if (args[0] === 'config') config = args[2];
     if (args[0] === 'event') {
       const q = new URLSearchParams({en:args[1], dl:config.page_location, dr:config.page_referrer, ...args[2]});
@@ -34,6 +37,19 @@ const googleMock = `(() => {
   const queue = [...(window.dataLayer || [])];
   window.gtag = command;
   window.dataLayer.push = args => command(...args);
+  queue.forEach(args => command(...args));
+})();`;
+
+const metaMock = `(() => {
+  const pixel = window.fbq;
+  const command = (...args) => {
+    (window.metaCommands ||= []).push(args);
+    if (args[0] !== 'track') return;
+    const q = new URLSearchParams({id:'1053877131029984', ev:args[1], dl:location.href, ...args[2]});
+    fetch('https://www.facebook.com/tr/?' + q, {mode:'no-cors',credentials:'omit',referrerPolicy:'no-referrer'});
+  };
+  pixel.callMethod = command;
+  const queue = [...pixel.queue]; pixel.queue.length = 0;
   queue.forEach(args => command(...args));
 })();`;
 
@@ -59,7 +75,7 @@ const speedMock = `(() => {
 
 export interface MeasurementRequest { url: string; body: string; headers: Record<string, string>; }
 
-export async function mockProduction(page: Page, request: APIRequestContext, baseURL: string, mode: 'production' | 'preview' | 'development' = 'production') {
+export async function mockProduction(page: Page, _request: APIRequestContext, _baseURL: string, mode: 'production' | 'preview' | 'development' = 'production') {
   const traffic: MeasurementRequest[] = [];
   const scripts: string[] = [];
   await page.route(`${TRACKING_ORIGIN}/**`, async route => {
@@ -72,16 +88,34 @@ export async function mockProduction(page: Page, request: APIRequestContext, bas
       traffic.push({ url: url.href, body: route.request().postData() ?? '', headers: await route.request().allHeaders() });
       return route.fulfill({ status: 204 });
     }
-    const local = await request.get(baseURL + url.pathname + url.search);
-    let body = await local.body();
-    if (mode !== 'production' && local.headers()['content-type']?.includes('text/html')) {
+    // Mirror the fresh static build directly. A consent-triggered reload can
+    // otherwise outlive the test's APIRequestContext and race its disposal.
+    const root = resolve('dist');
+    let file = resolve(root, '.' + decodeURIComponent(url.pathname));
+    let status = 200;
+    let body: Buffer;
+    try {
+      if (!file.startsWith(root + sep) && file !== root) throw new Error('Outside build');
+      if (!extname(file)) file = resolve(file, 'index.html');
+      body = await readFile(file);
+    } catch {
+      file = resolve(root, '404.html');
+      body = await readFile(file);
+      status = 404;
+    }
+    const contentType = ({ '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.txt': 'text/plain', '.xml': 'application/xml', '.md': 'text/plain' } as Record<string, string>)[extname(file)] ?? 'application/octet-stream';
+    if (mode !== 'production' && contentType === 'text/html') {
       body = Buffer.from(body.toString().replace('data-tracking-production="true"', 'data-tracking-production="false"').replace('data-production="true"', 'data-production="false"'));
     }
-    return route.fulfill({ response: local, body });
+    return route.fulfill({ status, contentType, body });
   });
   await page.route('https://www.googletagmanager.com/**', route => {
     scripts.push(route.request().url());
     return route.fulfill({ contentType: 'application/javascript', body: googleMock });
+  });
+  await page.route('https://connect.facebook.net/**', route => {
+    scripts.push(route.request().url());
+    return route.fulfill({ contentType: 'application/javascript', body: metaMock });
   });
   await page.route(/https:\/\/(?:www\.facebook\.com|[^/]*google-analytics\.com)\//, async route => {
     traffic.push({ url: route.request().url(), body: route.request().postData() ?? '', headers: await route.request().allHeaders() });

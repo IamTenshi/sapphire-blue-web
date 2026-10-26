@@ -17,5 +17,10 @@ export const test = base.extend<{ networkSafety: void }>({
 });
 // Finish local mirror callbacks while the API request fixture is still alive.
 // A consent withdrawal can navigate while the browser is loading assets.
-test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'wait' }); });
+test.afterEach(async ({ page }) => {
+  // SDK mocks can emit page_view before the replacement document has finished
+  // loading its other assets. Finish that load before removing the routes.
+  if (!page.isClosed()) await page.waitForLoadState('load');
+  await page.unrouteAll({ behavior: 'wait' });
+});
 export { expect };

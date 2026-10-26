@@ -1,14 +1,70 @@
 import {
   TRACKING_ORIGIN, TRACKING_STORAGE_KEY, TRACKING_TTL_MS, TRACKING_VERSION,
-  measurementPath, parsePreferences, safeMeasurementUrl, safeVercelContext,
+  measurementPath, parsePreferences, safeMeasurementUrl, safeVercelContext, safeSdkContext, attributionUrl,
   type TrackingPreferences,
 } from '../data/tracking';
 
 const denied = { analytics: false, advertising: false };
 let initialized = false;
-let frame: HTMLIFrameElement | undefined;
-let port: MessagePort | undefined;
-let ready = false;
+const GOOGLE_ID = 'G-L07HB79EBQ';
+const META_ID = '1053877131029984';
+type VendorWindow = Window & {
+  dataLayer?: IArguments[];
+  gtag?: (...args: unknown[]) => void;
+  fbq?: ((...args: unknown[]) => void) & { queue?: IArguments[]; callMethod?: (...args: unknown[]) => void; push?: unknown; loaded?: boolean; version?: string };
+  _fbq?: unknown;
+};
+const vendorWindow = window as VendorWindow;
+let googleReady = false;
+
+function gtag(..._args: unknown[]) { (vendorWindow.dataLayer ||= []).push(arguments); }
+
+function loadScript(src: string) {
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = src;
+  script.referrerPolicy = 'no-referrer';
+  document.head.append(script);
+  return script;
+}
+
+function startGoogle() {
+  vendorWindow.gtag = gtag;
+  // Basic consent mode: no Google script or denied-consent pings before choice.
+  gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  gtag('js', new Date());
+  gtag('config', GOOGLE_ID, {
+    send_page_view: false, page_location: attributionUrl(location.href),
+    page_referrer: document.referrer, page_title: 'Sapphire Blue',
+    allow_google_signals: false, allow_ad_personalization_signals: false,
+  });
+  gtag('event', 'page_view', { page_location: attributionUrl(location.href), page_referrer: document.referrer });
+  loadScript(`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ID}`).addEventListener('load', () => {
+    googleReady = effectiveTracking().analytics && !restarting;
+  });
+}
+
+function startMeta() {
+  if (!vendorWindow.fbq) {
+    const pixel = function (...args: unknown[]) {
+      if (pixel.callMethod) pixel.callMethod.apply(pixel, args);
+      else pixel.queue!.push(arguments);
+    } as NonNullable<VendorWindow['fbq']>;
+    pixel.queue = [];
+    pixel.push = pixel;
+    pixel.loaded = true;
+    pixel.version = '2.0';
+    vendorWindow.fbq = pixel;
+    vendorWindow._fbq = pixel;
+  }
+  const pixel = vendorWindow.fbq;
+  pixel('set', 'autoConfig', false, META_ID);
+  pixel('consent', 'grant');
+  pixel('init', META_ID);
+  pixel('track', 'PageView');
+  loadScript('https://connect.facebook.net/en_US/fbevents.js');
+}
 let loaded = { ...denied };
 let vercelStarted = false;
 let restarting = false;
@@ -80,11 +136,10 @@ export function effectiveTracking() {
 function restart() {
   if (restarting) return;
   restarting = true;
-  ready = false;
-  port?.close();
-  port = undefined;
-  frame?.remove();
-  frame = undefined;
+  // Stop collection before the full-document teardown. Do not send a denied
+  // consent-mode ping: SDKs were loaded only after an affirmative choice.
+  (window as unknown as Record<string, unknown>)[`ga-disable-${GOOGLE_ID}`] = true;
+  try { vendorWindow.fbq?.('consent', 'revoke'); } catch { /* Reload still revokes. */ }
   // Vercel has no supported full SDK teardown. The new document re-checks storage
   // and GPC before loading anything. Never keep a live SDK after withdrawal.
   if (storageFailed) {
@@ -123,6 +178,10 @@ async function startVercel() {
 
 function apply() {
   const next = effectiveTracking();
+  if ((loaded.analytics || loaded.advertising) && !safeSdkContext(location.href, document.referrer)) {
+    restart();
+    return;
+  }
   if (vercelStarted && !safeVercelContext(location.href, document.referrer)) {
     restart();
     return;
@@ -132,31 +191,9 @@ function apply() {
     return;
   }
   if (next.analytics || next.advertising) {
-    loaded = { ...next };
-    if (!frame) {
-      frame = document.createElement('iframe');
-      frame.hidden = true;
-      frame.title = 'Optional measurement';
-      frame.setAttribute('aria-hidden', 'true');
-      frame.setAttribute('sandbox', 'allow-scripts');
-      frame.referrerPolicy = 'no-referrer';
-      frame.src = '/measurement';
-      frame.addEventListener('load', () => {
-        const current = effectiveTracking();
-        if (!current.analytics && !current.advertising) return;
-        const channel = new MessageChannel();
-        port = channel.port1;
-        port.onmessage = ({ data }) => {
-          if (data?.type === 'ready') {
-            ready = true;
-            port?.postMessage({ type: 'enable', ...effectiveTracking() });
-          }
-        };
-        frame?.contentWindow?.postMessage({ type: 'sapphire:connect', page: measurementPath(location.pathname), ...current }, '*', [channel.port2]);
-      }, { once: true });
-      document.body.append(frame);
-    } else if (ready) {
-      port?.postMessage({ type: 'enable', ...next });
+    if (safeSdkContext(location.href, document.referrer)) {
+      if (next.analytics && !loaded.analytics) { loaded.analytics = true; startGoogle(); }
+      if (next.advertising && !loaded.advertising) { loaded.advertising = true; startMeta(); }
     }
     if (next.analytics) void startVercel();
   }
@@ -168,7 +205,15 @@ function apply() {
 // No buffering: accepting a category later must never replay an earlier lead.
 export function sendConfirmedLead(id: string) {
   const current = effectiveTracking();
-  if (ready && !restarting && (current.analytics || current.advertising)) port?.postMessage({ type: 'lead', id, ...current });
+  if (restarting || !safeSdkContext(location.href, document.referrer)) return;
+  // Do not replay a lead when a blocked/slow SDK eventually loads. Require the
+  // actual SDK, not its bootstrap queue, at confirmation time.
+  if (current.analytics && loaded.analytics && googleReady) {
+    try { vendorWindow.gtag?.('event', 'generate_lead', { page_location: attributionUrl(location.href), page_referrer: document.referrer }); } catch { /* independent providers */ }
+  }
+  if (current.advertising && loaded.advertising && vendorWindow.fbq?.callMethod) {
+    try { vendorWindow.fbq('track', 'Lead', {}, { eventID: id }); } catch { /* never affect the inquiry */ }
+  }
 }
 
 export async function sendVercelEvent(name: string, properties: Record<string, string | number | boolean>) {

@@ -1,12 +1,12 @@
 import { expect, test } from './fixtures';
-import { TRACKING_STORAGE_KEY, TRACKING_TTL_MS, parsePreferences, safeMeasurementUrl, safeVercelContext } from '../src/data/tracking';
+import { TRACKING_STORAGE_KEY, TRACKING_TTL_MS, parsePreferences, safeMeasurementUrl, safeVercelContext, safeSdkContext } from '../src/data/tracking';
 import { events, mockProduction, origin, preference, seed } from './tracking-helpers';
 
 test('preference schema is versioned, bounded and strict', () => {
   const now = Date.now();
   const valid = preference(true, false, now);
   expect(parsePreferences(JSON.stringify(valid), now)).toEqual(valid);
-  for (const value of [null, {}, [], 'oops', { ...valid, analytics: 'true' }, { ...valid, version: 2 }, { ...valid, savedAt: now + 1 }, { ...valid, expiresAt: now }, { ...valid, expiresAt: now + TRACKING_TTL_MS + 1 }, { ...valid, extra: true }]) {
+  for (const value of [null, {}, [], 'oops', { ...valid, analytics: 'true' }, { ...valid, version: 1 }, { ...valid, savedAt: now + 1 }, { ...valid, expiresAt: now }, { ...valid, expiresAt: now + TRACKING_TTL_MS + 1 }, { ...valid, extra: true }]) {
     expect(parsePreferences(typeof value === 'string' ? value : JSON.stringify(value), now)).toBeNull();
   }
   expect(safeMeasurementUrl(origin + '/private/person@example.com?phone=secret#message')).toBe(origin + '/404');
@@ -48,8 +48,8 @@ for (const [analytics, advertising] of [[true, false], [false, true], [true, tru
     expect(events(traffic, 'PageView')).toHaveLength(advertising ? 1 : 0);
     expect(scripts.filter(url => url.includes('googletagmanager'))).toHaveLength(analytics ? 1 : 0);
     expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(analytics ? 2 : 0);
-    const frame = page.frames().find(frame => frame.url().endsWith('/measurement'))!;
-    expect(await frame.evaluate(() => { try { return !!parent.document; } catch { return false; } })).toBe(false);
+    expect(scripts.filter(url => url.includes('connect.facebook.net'))).toHaveLength(advertising ? 1 : 0);
+    await expect(page.locator('iframe')).toHaveCount(0);
   });
 }
 
@@ -99,7 +99,7 @@ test('withdrawal reloads without optional SDKs and keeps a rejection', async ({ 
   await page.goto(origin);
   await page.getByRole('button', { name: 'Accept all', exact: true }).click();
   await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
-  await expect.poll(() => scripts.length).toBe(3);
+  await expect.poll(() => scripts.length).toBe(4);
   await page.locator('footer [data-cookie-settings]').click();
   await Promise.all([
     page.waitForEvent('load'),
@@ -107,7 +107,7 @@ test('withdrawal reloads without optional SDKs and keeps a rejection', async ({ 
   ]);
   await expect(page.locator('iframe')).toHaveCount(0);
   await expect(page.locator('#cookie-banner')).toBeHidden();
-  expect(scripts).toHaveLength(3);
+  expect(scripts).toHaveLength(4);
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), TRACKING_STORAGE_KEY);
   expect(saved.analytics).toBe(false);
   expect(saved.advertising).toBe(false);
@@ -117,12 +117,11 @@ test('withdrawal reloads without optional SDKs and keeps a rejection', async ({ 
   expect(traffic).toHaveLength(count);
 });
 
-test('URLs, fragments and unknown paths cannot leak into optional requests', async ({ page, request, baseURL }) => {
+test('sensitive URLs suppress page-level SDKs entirely', async ({ page, request, baseURL }) => {
   await seed(page, preference(true, true));
   const { traffic, scripts } = await mockProduction(page, request, baseURL!);
   await page.goto(origin + '/?email=PRIVATE@example.com#PRIVATE-message');
-  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
-  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  await expect(page.locator('#cookie-banner')).toBeHidden();
   expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(0);
   expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
   for (const item of traffic) {
@@ -130,8 +129,9 @@ test('URLs, fragments and unknown paths cannot leak into optional requests', asy
     expect(item.headers.cookie).toBeUndefined();
   }
   await page.goto(origin + '/private/PRIVATE@example.com');
-  await expect.poll(() => events(traffic, 'PageView').length).toBe(2);
-  expect(new URL(events(traffic, 'PageView')[1].url).searchParams.get('dl')).toBe(origin + '/404');
+  await expect(page.locator('#cookie-banner')).toBeHidden();
+  expect(scripts).toEqual([]);
+  expect(traffic).toEqual([]);
   expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
 });
 
@@ -158,7 +158,7 @@ for (const mode of ['preview', 'development'] as const) {
   });
 }
 
-test('without JavaScript there are no optional requests, including direct measurement page', async ({ browser, request, baseURL }) => {
+test('without JavaScript there are no optional requests, including the retired measurement route', async ({ browser, request, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, serviceWorkers: 'block' });
   await context.route('**/*', route => ['localhost', '127.0.0.1'].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
   const page = await context.newPage();
@@ -173,7 +173,7 @@ test('without JavaScript there are no optional requests, including direct measur
   } finally { await context.close(); }
 });
 
-test('measurement document opened directly is inert', async ({ page, request, baseURL }) => {
+test('the retired measurement route does not initialize providers without permission', async ({ page, request, baseURL }) => {
   const { traffic, scripts } = await mockProduction(page, request, baseURL!);
   await page.goto(origin + '/measurement');
   expect(traffic).toEqual([]);
@@ -233,7 +233,7 @@ test('withdrawing advertising preserves analytics independently', async ({ page,
   expect(saved.advertising).toBe(false);
 });
 
-test('GPC changing during a visit removes a previously authorized advertising frame', async ({ page, request, baseURL }) => {
+test('GPC changing during a visit revokes a previously authorized advertising SDK', async ({ page, request, baseURL }) => {
   // Persist the simulated browser signal across the safety reload, as a real
   // browser privacy signal would persist. Do not re-seed a withdrawn preference.
   await page.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', { get: () => localStorage.getItem('test-gpc') === 'true' }));
@@ -246,6 +246,48 @@ test('GPC changing during a visit removes a previously authorized advertising fr
   await expect(page.locator('#cookie-advertising')).toBeDisabled();
   await expect(page.locator('#cookie-advertising')).not.toBeChecked();
   expect(events(traffic, 'PageView')).toHaveLength(1);
+});
+
+test('official SDKs preserve approved campaign context and standard browser identifiers after consent', async ({ page, request, baseURL }) => {
+  const { scripts, traffic } = await mockProduction(page, request, baseURL!);
+  const landing = origin + '/?utm_source=facebook&utm_campaign=launch&fbclid=test-click-id';
+  await page.goto(landing);
+  expect(scripts).toEqual([]);
+  await page.getByRole('button', { name: 'Accept all', exact: true }).click();
+  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  const commands = await page.evaluate(() => ({ google: (window as any).googleCommands, meta: (window as any).metaCommands }));
+  const config = commands.google.find((args: unknown[]) => args[0] === 'config');
+  expect(config[1]).toBe('G-L07HB79EBQ');
+  expect(config[2]).not.toHaveProperty('client_id');
+  expect(config[2]).not.toHaveProperty('client_storage');
+  expect(config[2]).toMatchObject({ send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
+  expect(commands.google).toContainEqual(['consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' }]);
+  expect(commands.google).toContainEqual(['consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' }]);
+  expect(commands.meta).toContainEqual(['set', 'autoConfig', false, '1053877131029984']);
+  expect(commands.meta).toContainEqual(['init', '1053877131029984']);
+  expect(new URL(events(traffic, 'page_view')[0].url).searchParams.get('dl')).toBe(landing);
+  expect(new URL(events(traffic, 'PageView')[0].url).searchParams.get('dl')).toBe(landing);
+  expect(scripts.filter(url => url.includes('connect.facebook.net'))).toHaveLength(1);
+  expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(0);
+  await expect(page.locator('iframe')).toHaveCount(0);
+});
+
+test('the prior isolated-architecture grant does not authorize official SDKs', async ({ page, request, baseURL }) => {
+  await seed(page, { ...preference(true, true), version: 1 });
+  const { scripts, traffic } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin);
+  await expect(page.locator('#cookie-banner')).toBeVisible();
+  expect(scripts).toEqual([]);
+  expect(traffic).toEqual([]);
+});
+
+test('SDK context validation rejects unknown parameters and sensitive referrers, not ordinary ad links', () => {
+  expect(safeSdkContext(origin + '/?utm_campaign=launch&gclid=test-id', 'https://www.google.com/')).toBe(true);
+  expect(safeSdkContext(origin + '/?email=person@example.com', '')).toBe(false);
+  expect(safeSdkContext(origin + '/?utm_campaign=person%40example.com', '')).toBe(false);
+  expect(safeSdkContext(origin, 'https://example.com/private/person')).toBe(false);
+  expect(safeSdkContext('not-a-url', '')).toBe(false);
 });
 
 for (const fallbackStorage of [true, false]) {
@@ -297,13 +339,14 @@ for (const fallbackStorage of [true, false]) {
   });
 }
 
-test('a sensitive incoming referrer suppresses Vercel and is not forwarded to the isolated providers', async ({ page, request, baseURL }) => {
+test('a sensitive incoming referrer suppresses all optional SDKs', async ({ page, request, baseURL }) => {
   await seed(page, preference(true, true));
   const { traffic, scripts } = await mockProduction(page, request, baseURL!);
   await page.goto(origin + '/privacy', { referer: origin + '/?email=PRIVATE@example.com' });
   expect(await page.evaluate(() => document.referrer)).toContain('PRIVATE');
-  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
-  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  await expect(page.locator('#cookie-banner')).toBeHidden();
+  expect(scripts).toEqual([]);
+  expect(traffic).toEqual([]);
   expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(0);
   expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
   for (const item of traffic) expect(item.headers.referer).toBeUndefined();
@@ -319,7 +362,8 @@ test('an unsafe history change restarts without Vercel and keeps provider URLs s
     page.waitForEvent('load'),
     page.evaluate(() => history.pushState({}, '', '/?email=PRIVATE@example.com#PRIVATE-message')),
   ]);
-  await expect.poll(() => events(traffic, 'PageView').length).toBe(2);
+  await expect(page.locator('#cookie-banner')).toBeHidden();
+  expect(events(traffic, 'PageView')).toHaveLength(1);
   expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(2);
   expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
 });

@@ -101,6 +101,7 @@ test('missing or blocked measurement does not break confirmed inquiry', async ({
   await seed(page, preference(true, true));
   await mockProduction(page, request, baseURL!);
   await page.route('https://www.googletagmanager.com/**', route => route.abort());
+  await page.route('https://connect.facebook.net/**', route => route.abort());
   await page.route('https://www.facebook.com/**', route => route.abort());
   await page.route(endpoint, route => route.fulfill({ headers: cors, body: 'ok' }));
   await page.goto(origin);
@@ -124,6 +125,31 @@ test('an unconfirmed timeout never emits a conversion', async ({ page, request, 
   await expect(page.locator('#submitError')).toBeVisible();
   expect(events(traffic, 'Lead')).toHaveLength(0);
   expect(events(traffic, 'generate_lead')).toHaveLength(0);
+});
+
+test('a late SDK load cannot replay a completed inquiry as a conversion', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route(/https:\/\/(?:www\.googletagmanager\.com|connect\.facebook\.net)\//, async route => {
+    await gate;
+    await route.fallback();
+  });
+  await page.route(endpoint, route => route.fulfill({ headers: cors, body: 'ok' }));
+  try {
+    await page.goto(origin, { waitUntil: 'domcontentloaded' });
+    await fillContact(page);
+    await page.locator('#form button[type="submit"]').click();
+    await expect(page.locator('#sent')).toBeVisible();
+    expect(events(traffic, 'Lead')).toHaveLength(0);
+    expect(events(traffic, 'generate_lead')).toHaveLength(0);
+    release();
+    await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+    await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+    expect(events(traffic, 'Lead')).toHaveLength(0);
+    expect(events(traffic, 'generate_lead')).toHaveLength(0);
+  } finally { release(); }
 });
 
 test('the unchanged form POST follows a readable ContentService-style redirect without preflight', async ({ page }) => {

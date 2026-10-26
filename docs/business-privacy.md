@@ -72,7 +72,7 @@ The provider descriptions are a notice, not evidence that account-level contract
 The coordinator owns the implementation and integration tests for these statements in the public notice:
 
 - Optional Google, Vercel and Meta scripts/requests must be blocked before the appropriate choice; analytics and advertising are separate choices.
-- Preference storage: `localStorage['sapphire.tracking-preferences']`, schema version **1**, valid for **180 days**. No valid choice means no optional tools until permission. Clearing storage removes the saved preference.
+- Preference storage: `localStorage['sapphire.tracking-preferences']`, schema version **2**, valid for **180 days**. No valid choice means no optional tools until permission. Clearing storage removes the saved preference. Version 1 from the isolated implementation is invalid: official SDKs require a new choice.
 - No optional measurement with JavaScript off, in development or on previews. Remove the unconditional Meta noscript pixel.
 - GPC blocks/objects to **advertising**; it must not be represented as an automatic analytics rejection. Users can independently reject analytics.
 - The footer's **Cookie settings** control must work on the homepage, legal pages and 404 and allow withdrawal/change. Withdrawal stops future optional collection; it cannot recall past provider disclosures or erase cookies set on other websites.

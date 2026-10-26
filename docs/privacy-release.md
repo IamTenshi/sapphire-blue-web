@@ -19,8 +19,8 @@ Se recomienda **una PR atómica** de la rama integrada: publicar legales sin sus
 ## Implementado y desactivado
 
 - `/privacy` — **Privacy & Cookies** y `/sms-terms` — **SMS Terms**, en inglés, con identidad real y contacto centralizados, sin dirección inventada.
-- Gestor accesible con aceptar/rechazar/configurar, versión 1, 180 días, dos categorías independientes, GPC y comportamiento cerrado ante error. Controles disponibles también en 404; sin JavaScript no hay seguimiento opcional.
-- Google aislado del formulario/URL principal; Meta con transporte Pixel explícito sin SDK automático; Vercel condicionado y limitado a contextos seguros. Los detalles y pérdidas deliberadas de atribución están en `tracking-privacy.md`.
+- Gestor accesible con aceptar/rechazar/configurar, versión 2, 180 días, dos categorías independientes, GPC y comportamiento cerrado ante error. Controles disponibles también en 404; sin JavaScript no hay seguimiento opcional.
+- La entrega inicial aislaba Google y enviaba Meta manualmente. La revisión del 26 de octubre restaura los SDK oficiales después del consentimiento y requiere una nueva elección (versión 2). Vercel sigue condicionado a contextos seguros. Ver `tracking-privacy.md`; ya no se afirma aislamiento del formulario ni ausencia de identificadores persistentes.
 - Conversiones solo después de HTTP correcto + texto `ok`, con autorización vigente por categoría y sin reproducción posterior. El formulario sigue usando exactamente sus seis campos y endpoint originales.
 - Email comercial/quincenal y SMS automatizado: **ambos desactivados**, con bloqueos distintos y explicaciones visibles. No existe confirmación ficticia de suscripción ni persistencia de permisos comerciales implementada.
 - Eventos personalizados Vercel: ejemplo de configuración desactivado; habilitación del plan/variable externa no acreditada ni modificada. En pruebas locales se habilita únicamente la simulación para ejercer el control de categoría.
@@ -49,7 +49,7 @@ La web puede mantenerse con ambos canales comerciales desactivados. **No hay que
 
 - [ ] Revisión humana de identidad, contenido, proveedores reales, accesos y funcionamiento operativo descrito.
 - [ ] Revisión legal contextual de obligaciones en República Dominicana/Estados Unidos, conservación fiscal, accesos internacionales, datos de contacto/dirección que deban publicarse, cookies/seguimiento, email y reglas de SMS. No se declara cumplimiento legal universal.
-- [ ] Aprobación explícita de la minimización de Google/Meta y sus límites de atribución; no se ha probado recepción con conversiones reales.
+- [ ] Revisar los SDK oficiales autorizados el 26 de octubre, cookies/identificadores y configuración externa automática. Comprobar recepción y atribución por separado: los mocks no las acreditan.
 - [ ] Confirmar variables y automatizaciones del repositorio/proyecto Vercel antes de cualquier push. La documentación existente identifica `main` como producción, pero no se inspeccionó administrativamente la integración y puede haber previews automáticos para otras ramas.
 - [ ] Revisar y aprobar la PR completa, conservar los dos canales comerciales desactivados y dar autorización explícita para publicar.
 
@@ -63,13 +63,13 @@ La web puede mantenerse con ambos canales comerciales desactivados. **No hay que
 
 **Descripción:**
 
-> Adds truthful English Privacy & Cookies / SMS Terms pages and centralized business facts. Blocks optional analytics/advertising until valid independent preferences, honors GPC, contains automatic URL/form capture, removes Meta noscript and supports withdrawal. Keeps the inquiry POST and Apps Script unchanged. Email/SMS enrollment stays independently disabled until verified persistence and operational approval. Includes mocked network/form tests, legal/404/keyboard coverage, preserved historic visual references and explicit external launch gates.
+> Adds English Privacy & Cookies / SMS Terms pages and centralized business facts. Blocks official Google/Meta SDKs until valid independent version-2 preferences, honors GPC, removes Meta noscript and supports withdrawal. Restores browser identifiers and allowlisted attribution parameters after consent; no explicit form fields are sent to measurement. Provider automatic settings require external review. Keeps the inquiry POST and Apps Script unchanged. Email/SMS enrollment stays independently disabled until verified persistence and operational approval. Includes mocked network/form tests, legal/404/keyboard coverage, preserved historic visual references and explicit external launch gates.
 >
 > No push, deployment, account changes or real contacts/SMS/conversions were performed. Do not deploy the component branches independently. Provider ingestion and external consent persistence are not established by local mocks. See `docs/privacy-release.md`, `docs/tracking-privacy.md`, `docs/contact-permissions.md` and `docs/business-privacy.md` for evidence and release conditions.
 
 Incluir los resultados finales de validación indicados abajo en la PR al crearla, solo tras autorización y verificación del flujo de despliegue.
 
-## Validación final del conjunto integrado
+## Validación anterior del conjunto integrado (arquitectura aislada)
 
 Ejecutada el **25 de octubre de 2026**, sobre `987b00a` (después solo se completa documentación):
 
@@ -85,3 +85,30 @@ Ejecutada el **25 de octubre de 2026**, sobre `987b00a` (después solo se comple
 La primera ejecución de Playwright falló al iniciar Chromium por ausencia de `libnspr4.so` en el loader path. Reutilizar las bibliotecas temporales ya presentes solucionó el entorno, sin instalación global. Ejecuciones intermedias detectaron selectores/títulos de tests inestables y una carrera del mirror de pruebas durante reload: se corrigieron y se repitió la suite completa. Una primera sonda de desarrollo no arrancó por el lock del servidor existente; la comprobación posterior con `--ignore-lock` sí validó ambos flags. Ninguna de esas ejecuciones fallidas se contabiliza como aprobada.
 
 Las nuevas referencias visuales se generaron con `--update-snapshots=missing`, sin reemplazar archivos históricos, se inspeccionaron y después se comprobaron en ejecuciones sin actualización. La validación final no acredita ingestión real por Google/Meta/Vercel ni persistencia en Sheets/Brevo; todos esos destinos se interceptaron. Las solicitudes inesperadas que escapen de los mocks abortan y hacen fallar el harness.
+
+## Revisión de medición — 26 de octubre de 2026
+
+El propietario autorizó recuperar medición convencional con los SDK oficiales,
+condicionada al consentimiento. Se retiraron el iframe y el transporte manual de
+Meta. Se mantienen categorías independientes, GPC, retirada, bloqueo en previews,
+conversiones solo tras `ok` y ausencia de reproducción posterior. La versión 2
+invalida elecciones de la arquitectura anterior. Los SDK pueden usar identificadores
+persistentes y parámetros aprobados de campaña; no se afirma aislamiento del DOM.
+Se actualizaron el aviso público y las instrucciones de revisión externa.
+
+El harness ahora sirve los archivos del build directamente al interceptar el
+origen canónico: una recarga por retirada podía sobrevivir al contexto HTTP de
+Playwright y producir fallos de teardown. Se verificaron ocho ejecuciones repetidas
+de los casos de retirada/GPC sin ese fallo. No se ocultaron errores con
+`ignoreErrors`, no se actualizaron capturas y no se habilitaron conexiones reales.
+
+La recepción de eventos, atribución y configuración automática de las cuentas
+siguen pendientes de verificación externa. No se han modificado Apps Script,
+cuentas, campañas, canales comerciales ni alojamiento; no se ha hecho push ni deploy.
+
+Validación final de esta revisión: `pnpm check` con cero errores, advertencias e
+indicaciones (45 archivos), y `LD_LIBRARY_PATH=/tmp/opencode/chromium-libs/usr/lib/x86_64-linux-gnu pnpm test --workers=4 --reporter=dot`
+con **118 pruebas aprobadas**, incluido build estático nuevo y todas las comparaciones
+visuales sin actualizar referencias. La primera ejecución no pudo iniciar Chromium
+por bibliotecas ausentes; se extrajeron tres paquetes únicamente en `/tmp/opencode`
+para ejecutar las pruebas, sin instalación global ni dependencias nuevas del proyecto.
