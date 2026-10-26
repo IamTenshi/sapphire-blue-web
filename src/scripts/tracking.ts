@@ -14,11 +14,52 @@ let vercelStarted = false;
 let restarting = false;
 let storageFailed = false;
 let expiryTimer: number | undefined;
+const SAFETY_KEY = 'sapphire.tracking-blocked';
+const SAFETY_COOKIE = 'sapphire_tracking_blocked';
+const SAFETY_PARAM = 'sapphire-tracking-off';
 
-function read(): TrackingPreferences | null {
-  if (storageFailed || new URLSearchParams(location.search).has('sapphire-tracking-off')) return null;
+function readStored(): TrackingPreferences | null {
   try { return parsePreferences(localStorage.getItem(TRACKING_STORAGE_KEY)); }
   catch { return null; }
+}
+
+function safetyBlocked(): boolean {
+  if (storageFailed || new URLSearchParams(location.search).has(SAFETY_PARAM)) return true;
+  try { if (sessionStorage.getItem(SAFETY_KEY) === '1') return true; } catch { /* URL fallback */ }
+  try { if (document.cookie.split(';').some(cookie => cookie.trim() === `${SAFETY_COOKIE}=1`)) return true; } catch { /* URL fallback */ }
+  return false;
+}
+
+function read(): TrackingPreferences | null {
+  return safetyBlocked() ? null : readStored();
+}
+
+function markInternalLinks(blocked: boolean) {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+    const url = new URL(link.href);
+    if (url.origin !== location.origin) continue;
+    if (blocked) url.searchParams.set(SAFETY_PARAM, '1');
+    else url.searchParams.delete(SAFETY_PARAM);
+    link.setAttribute('href', url.pathname + url.search + url.hash);
+  }
+}
+
+function blockAfterStorageFailure() {
+  storageFailed = true;
+  // Denial-only, technically necessary safeguards. Neither is an analytics grant.
+  try { sessionStorage.setItem(SAFETY_KEY, '1'); } catch { /* URL/link fallback */ }
+  try { document.cookie = `${SAFETY_COOKIE}=1; Path=/; Max-Age=${TRACKING_TTL_MS / 1000}; SameSite=Lax; Secure`; } catch { /* URL/link fallback */ }
+  markInternalLinks(true);
+}
+
+function clearSafetyBlock() {
+  try { sessionStorage.removeItem(SAFETY_KEY); } catch { /* may be unavailable */ }
+  try { document.cookie = `${SAFETY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax; Secure`; } catch { /* may be unavailable */ }
+  markInternalLinks(false);
+  const url = new URL(location.href);
+  url.searchParams.delete(SAFETY_PARAM);
+  if (url.href !== location.href) history.replaceState(history.state, '', url);
+  if (safetyBlocked()) throw new Error('Safety denial could not be cleared');
 }
 
 function gpc(): boolean {
@@ -50,7 +91,7 @@ function restart() {
     // If saving a withdrawal fails while an old grant is still readable, the
     // reload must not resurrect it. This URL contains no submitted form data.
     const url = new URL(location.href);
-    url.searchParams.set('sapphire-tracking-off', '1');
+    url.searchParams.set(SAFETY_PARAM, '1');
     location.replace(url);
   } else location.reload();
 }
@@ -149,6 +190,8 @@ function refresh() {
   }
   const gpcNote = document.getElementById('cookie-gpc');
   if (gpcNote) gpcNote.hidden = !gpc();
+  const safetyNote = document.getElementById('cookie-safety');
+  if (safetyNote) safetyNote.hidden = !safetyBlocked();
 }
 
 export function initializeTracking() {
@@ -170,18 +213,22 @@ export function initializeTracking() {
     if (!dialog!.open) dialog!.showModal();
   }
   function save(analytics: boolean, advertising: boolean) {
+    const wasBlocked = safetyBlocked();
     const savedAt = Date.now();
     const preference: TrackingPreferences = { version: TRACKING_VERSION, savedAt, expiresAt: savedAt + TRACKING_TTL_MS, analytics, advertising: advertising && !gpc() };
     try {
       storageFailed = false;
       localStorage.setItem(TRACKING_STORAGE_KEY, JSON.stringify(preference));
-      const persisted = read();
+      // Verification must bypass the effective safety veto, not the schema or
+      // persistence checks. Only a freshly verified choice may clear that veto.
+      const persisted = readStored();
       if (!persisted || persisted.savedAt !== savedAt || persisted.analytics !== preference.analytics || persisted.advertising !== preference.advertising) throw new Error('Storage verification failed');
+      if (wasBlocked) clearSafetyBlock();
       dialog!.close();
     } catch {
       // Do not grant a session-only permission when persistence cannot be verified.
       try { localStorage.removeItem(TRACKING_STORAGE_KEY); } catch { /* unavailable */ }
-      storageFailed = true;
+      blockAfterStorageFailure();
       open();
       error!.hidden = false;
     }
@@ -197,6 +244,12 @@ export function initializeTracking() {
   document.getElementById('cookie-save')?.addEventListener('click', () => save(analytics.checked, advertising.checked));
   document.getElementById('cookie-close')?.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => opener?.focus());
+  const banner = document.getElementById('cookie-banner');
+  if (banner && 'ResizeObserver' in window) {
+    new ResizeObserver(() => {
+      if (!banner.hidden) document.documentElement.style.setProperty('--cookie-banner-space', `${banner.getBoundingClientRect().height + 32}px`);
+    }).observe(banner);
+  }
   window.addEventListener('storage', event => { if (event.key === TRACKING_STORAGE_KEY || event.key === null) refresh(); });
   window.addEventListener('focus', refresh);
   window.addEventListener('hashchange', refresh);
@@ -210,5 +263,9 @@ export function initializeTracking() {
   // GPC has no standardized change event. Check on use, focus and a lightweight
   // poll; expiration also has its own timer. One subscription per document.
   window.setInterval(refresh, 1000);
+  // Preserve a failed withdrawal on ordinary links, including opening a new tab,
+  // even if cookies AND session storage are unavailable. Direct manual removal
+  // of all browser state cannot be made durable by a static site.
+  if (safetyBlocked()) markInternalLinks(true);
   refresh();
 }

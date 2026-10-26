@@ -43,3 +43,15 @@ for (const width of [390, 1440]) {
     });
   });
 }
+
+for (const width of [390, 1440]) {
+  test(`accessible privacy controls at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page).toHaveScreenshot(`privacy-banner-${width}.png`, { animations: 'disabled', threshold: 0, maxDiffPixels: 0 });
+    await page.getByRole('button', { name: 'Configure', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Cookie settings' })).toBeVisible();
+    await expect(page).toHaveScreenshot(`privacy-settings-${width}.png`, { animations: 'disabled', threshold: 0, maxDiffPixels: 0 });
+  });
+}

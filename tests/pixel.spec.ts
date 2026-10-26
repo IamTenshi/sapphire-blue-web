@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import { cors, endpoint, events, fillContact, mockProduction, origin, preference, seed } from './tracking-helpers';
+import { createServer } from 'node:http';
 
 test('confirmed success only, independently authorized conversions, no concurrent duplicates or replay', async ({ page, request, baseURL }) => {
   const { traffic } = await mockProduction(page, request, baseURL!);
@@ -91,7 +92,8 @@ test('a changed preference during an in-flight request is checked again at confi
   // No storage event in this document: exercise the event-time check before the poll.
   await page.evaluate(() => localStorage.removeItem('sapphire.tracking-preferences'));
   release();
-  await expect.poll(() => events(traffic, 'Lead').length).toBe(0);
+  await expect(page.locator('#sent')).toBeVisible();
+  expect(events(traffic, 'Lead')).toHaveLength(0);
   expect(events(traffic, 'generate_lead')).toHaveLength(0);
 });
 
@@ -122,4 +124,40 @@ test('an unconfirmed timeout never emits a conversion', async ({ page, request, 
   await expect(page.locator('#submitError')).toBeVisible();
   expect(events(traffic, 'Lead')).toHaveLength(0);
   expect(events(traffic, 'generate_lead')).toHaveLength(0);
+});
+
+test('the unchanged form POST follows a readable ContentService-style redirect without preflight', async ({ page }) => {
+  const methods: string[] = [];
+  let payload = '';
+  const confirmation = createServer((request, response) => {
+    methods.push(request.method!);
+    response.writeHead(200, { ...cors, 'content-type': 'text/plain' });
+    response.end('ok');
+  });
+  await new Promise<void>(resolve => confirmation.listen(0, '127.0.0.1', resolve));
+  const confirmationPort = (confirmation.address() as { port: number }).port;
+  const upstream = createServer((request, response) => {
+    methods.push(request.method!);
+    request.on('data', chunk => { payload += chunk.toString(); });
+    request.on('end', () => {
+      response.writeHead(302, { ...cors, location: `http://127.0.0.1:${confirmationPort}/confirmation` });
+      response.end();
+    });
+  });
+  try {
+    await new Promise<void>(resolve => upstream.listen(0, '127.0.0.1', resolve));
+    const port = (upstream.address() as { port: number }).port;
+    await page.goto('/');
+    await page.evaluate(url => {
+      const originalFetch = window.fetch;
+      window.fetch = (input, init) => originalFetch(typeof input === 'string' && input.startsWith('https://script.google.com/') ? url : input, init);
+    }, `http://127.0.0.1:${port}/exec`);
+    await fillContact(page);
+    await page.locator('#form button[type="submit"]').click();
+    await expect(page.locator('#sent')).toBeVisible();
+    expect(methods).toEqual(['POST', 'GET']);
+    expect([...new URLSearchParams(payload).keys()]).toEqual(['name', 'business', 'email', 'phone', 'message', 'needs']);
+  } finally {
+    await Promise.all([upstream, confirmation].map(server => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))));
+  }
 });

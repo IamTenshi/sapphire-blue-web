@@ -15,9 +15,9 @@ This change owns only:
 
 The consent-manager and form owners must integrate their changes before deployment. **Do not deploy this content-only branch in isolation:** at base `24bba3d`, `BaseLayout.astro` loads Google Analytics and Meta Pixel without consent (including a Meta noscript request), and loads Vercel measurement independently of the new preferences. Those files are deliberately not modified here. The public notice describes the coordinated release, not a claim that the base layout has already been fixed.
 
-The shared Footer is imported by `LegalLayout.astro`; its owner must provide root-relative home-section links, `/privacy`, `/sms-terms`, and an accessible **Privacy settings** control on both legal routes. The legal layout has its own root-relative navigation, one `h1`, and `main#top[tabindex="-1"]`. The SEO route list adds both real legal pages, and `siteIdentity.email` reads `business.email`.
+The integrated Footer provides root-relative home-section links, `/privacy`, `/sms-terms`, and an accessible **Cookie settings** control on both legal routes and 404. The legal layout has its own root-relative navigation, one `h1`, and `main#top[tabindex="-1"]`. The SEO route list adds both real legal pages, and `siteIdentity.email` reads `business.email`.
 
-**Canonical URL integration follow-up:** the inherited `BaseLayout` emits Astro's generated `/privacy/` and `/sms-terms/` canonical URLs, while the agreed `indexablePaths` entries and resulting sitemap use `/privacy` and `/sms-terms`. Keep the route contract and have the layout owner align the canonical URL policy during integration (for example, normalize the canonical pathname to no trailing slash except `/`). This branch does not modify the shared layout or hosting redirects.
+**Canonical integration resolved:** `BaseLayout` now normalizes canonical pathnames to no trailing slash except `/`, matching `indexablePaths` and the sitemap. The branch-only results below predate this integration fix. No hosting redirects were changed.
 
 ## Central facts and fixed contracts
 
@@ -26,7 +26,7 @@ The shared Footer is imported by `LegalLayout.astro`; its owner must provide roo
 - Brand: **Sapphire Blue**.
 - Operator: **Asor Jehovalina Garcia Diaz**, **an independent professional based in the Dominican Republic**. No company incorporation, US establishment or certification is asserted.
 - Contact and manual rights requests: **hello@sapphireblue.studio**, addressed to Asor.
-- Initial audience: adult business/professional users, initially in the US. A service area is not a postal address or an operator establishment.
+- Initial audience: business/professional users, initially in the US. A service area is not a postal address or an operator establishment.
 - Two authorized people with access on the operator's side, located in the Dominican Republic and the US. This does not mean providers have no access.
 - Provider descriptions, intended retention targets, and planned email/SMS purposes.
 
@@ -75,7 +75,7 @@ The coordinator owns the implementation and integration tests for these statemen
 - Preference storage: `localStorage['sapphire.tracking-preferences']`, schema version **1**, valid for **180 days**. No valid choice means no optional tools until permission. Clearing storage removes the saved preference.
 - No optional measurement with JavaScript off, in development or on previews. Remove the unconditional Meta noscript pixel.
 - GPC blocks/objects to **advertising**; it must not be represented as an automatic analytics rejection. Users can independently reject analytics.
-- The footer's **Privacy settings** control must work on the homepage and legal pages and allow withdrawal/change. Withdrawal stops future optional collection; it cannot recall past provider disclosures.
+- The footer's **Cookie settings** control must work on the homepage, legal pages and 404 and allow withdrawal/change. Withdrawal stops future optional collection; it cannot recall past provider disclosures or erase cookies set on other websites.
 - No form/contact data or sensitive URL values should become event properties, page URLs, referrers or titles sent to optional tools. Unknown or unsafe paths must not be exposed to measurement. Suppression is preferable to leaking data; the notice explicitly does not promise to count every visit.
 - Browser preference storage is not a server-side, verifiable email/SMS permission register. Marketing enrollment must not be inferred from a tracking preference.
 
@@ -88,7 +88,7 @@ The shared data and privacy page state these targets:
 | Record | Intended retention |
 | --- | --- |
 | Prospects | Six months after the last interaction. |
-| Clients | One year after the relationship ends, except relevant fiscal/accounting records. |
+| Client contact details | One year after the relationship ends, except relevant fiscal/accounting records. |
 | Fiscal/accounting | At least ten years, subject to applicable obligations. Confirm the applicable records and period with the responsible business/accounting/legal adviser; no statute-specific legal basis is invented. |
 | Minimal permission / opt-out records | Separate from marketing contact lists; as long as needed to document permission and honor opt-outs. A fixed duration has not been finalized. |
 
@@ -124,7 +124,7 @@ Before operational sign-off, confirm a manual process for finding records across
 
 ### Additional SMS gates
 
-- [ ] Operational sender/number, sender identity and any required registrations/approvals verified for the intended destinations and audience.
+- [ ] Operational sender/number, sender identity and required US SMS sender registration/approval verified for the actual route supported by Brevo and intended audience; no sender or approval is assumed.
 - [ ] Automated Sapphire Blue promotional texts via Brevo match the independently selected SMS wording, variable-frequency statement and carrier-charge disclosure.
 - [ ] Tested STOP withdrawal and HELP workflow, with actual contact/help details and suppression handling. STOP is an intended future mechanism, **not operational support advertised today**.
 - [ ] Revise `/sms-terms` from a planned-program description to accurate active-program terms. No active enrollment until this review is complete.
@@ -132,7 +132,7 @@ Before operational sign-off, confirm a manual process for finding records across
 ### Coordinated website release checks
 
 - [ ] Merge the consent-manager and form changes; verify the public notice's behavior, including no optional noscript requests, no preview/dev measurement and safe handling of unknown URLs.
-- [ ] Verify both Footer legal links and Privacy settings on `/`, `/privacy` and `/sms-terms`.
+- [ ] Verify both Footer legal links and Cookie settings on `/`, `/privacy`, `/sms-terms` and 404.
 - [ ] Verify form wording links to the notice and never treats a business inquiry, phone entry or tracking choice as a marketing opt-in; both availability flags remain false.
 - [ ] Check production-like markup, keyboard access, mobile layout, canonical URLs and sitemap entries for both legal pages. No home-only organization/service graph should be copied to the legal routes.
 - [ ] Align inherited trailing-slash canonical URLs with the slashless legal entries in `indexablePaths`/the sitemap and the actual hosting URL policy.
@@ -150,7 +150,7 @@ pnpm build
 
 The first command uses the existing package store without downloading or changing the lockfile. Build/check success alone does not establish that provider administration, consent capture, retention, rights handling or marketing launch gates work. The coordinator must run the integrated consent/form/browser checks after merging the independently owned changes.
 
-### Results in this worktree
+### Legal-only branch results (commit `27eac57`)
 
 - Offline dependency installation succeeded; the lockfile was unchanged and the main worktree's dependency tree was not used or modified.
 - `pnpm check`: **0 errors, 0 warnings, 0 hints** (36 files).

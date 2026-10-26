@@ -53,8 +53,12 @@ for (const [analytics, advertising] of [[true, false], [false, true], [true, tru
   });
 }
 
-for (const bad of ['not-json', JSON.stringify({ ...preference(true, true), version: 99 }), JSON.stringify(preference(true, true, Date.now() - TRACKING_TTL_MS - 1000))]) {
-  test(`invalid or expired storage stays off: ${bad.slice(0, 35)}`, async ({ page, request, baseURL }) => {
+for (const [name, bad] of [
+  ['malformed', 'not-json'],
+  ['unknown version', JSON.stringify({ ...preference(true, true), version: 99 })],
+  ['expired', JSON.stringify(preference(true, true, Date.now() - TRACKING_TTL_MS - 1000))],
+]) {
+  test(`invalid or expired storage stays off: ${name}`, async ({ page, request, baseURL }) => {
     await seed(page, bad);
     const { traffic, scripts } = await mockProduction(page, request, baseURL!);
     await page.goto(origin);
@@ -209,3 +213,83 @@ test('settings dialog supports keyboard dismissal and restores focus', async ({ 
   await expect(page.locator('#cookie-dialog')).not.toBeVisible();
   await expect(settings).toBeFocused();
 });
+
+test('withdrawing advertising preserves analytics independently', async ({ page, request, baseURL }) => {
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin);
+  await page.getByRole('button', { name: 'Accept all', exact: true }).click();
+  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await page.locator('footer [data-cookie-settings]').click();
+  await page.locator('#cookie-advertising').uncheck();
+  await page.getByRole('button', { name: 'Save choices', exact: true }).click();
+  await expect.poll(() => events(traffic, 'page_view').length).toBe(2);
+  expect(events(traffic, 'PageView')).toHaveLength(1);
+  const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), TRACKING_STORAGE_KEY);
+  expect(saved.analytics).toBe(true);
+  expect(saved.advertising).toBe(false);
+});
+
+test('GPC changing during a visit removes a previously authorized advertising frame', async ({ page, request, baseURL }) => {
+  // Persist the simulated browser signal across the safety reload, as a real
+  // browser privacy signal would persist. Do not re-seed a withdrawn preference.
+  await page.addInitScript(() => Object.defineProperty(navigator, 'globalPrivacyControl', { get: () => localStorage.getItem('test-gpc') === 'true' }));
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin);
+  await page.getByRole('button', { name: 'Accept all', exact: true }).click();
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await page.evaluate(() => { localStorage.setItem('test-gpc', 'true'); dispatchEvent(new Event('focus')); });
+  await page.locator('footer [data-cookie-settings]').click();
+  await expect(page.locator('#cookie-advertising')).toBeDisabled();
+  await expect(page.locator('#cookie-advertising')).not.toBeChecked();
+  expect(events(traffic, 'PageView')).toHaveLength(1);
+});
+
+for (const fallbackStorage of [true, false]) {
+  test(`a failed withdrawal stays denied across links and can recover (fallback storage ${fallbackStorage})`, async ({ page, request, baseURL }) => {
+    await page.addInitScript(({ stored, fallbackStorage }) => {
+      const set = Storage.prototype.setItem;
+      const remove = Storage.prototype.removeItem;
+      const key = 'sapphire.tracking-preferences';
+      if (!localStorage.getItem(key)) set.call(localStorage, key, JSON.stringify(stored));
+      Storage.prototype.setItem = function (key, value) {
+        if (!fallbackStorage || this === localStorage) throw new Error('Read-only storage');
+        return set.call(this, key, value);
+      };
+      Storage.prototype.removeItem = function (key) {
+        if (!fallbackStorage || this === localStorage) throw new Error('Read-only storage');
+        return remove.call(this, key);
+      };
+      if (!fallbackStorage) Object.defineProperty(document, 'cookie', { configurable: true, get: () => '', set: () => {} });
+      (window as any).restoreStorage = () => { Storage.prototype.setItem = set; Storage.prototype.removeItem = remove; };
+    }, { stored: preference(true, true), fallbackStorage });
+    const { traffic } = await mockProduction(page, request, baseURL!);
+    await page.goto(origin);
+    await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+    await page.locator('footer [data-cookie-settings]').click();
+    await page.getByRole('button', { name: 'Reject optional', exact: true }).last().click();
+    await expect(page).toHaveURL(/sapphire-tracking-off=1/);
+    await expect(page.locator('iframe')).toHaveCount(0);
+    await expect(page.locator('#cookie-safety')).toBeVisible();
+    await page.locator('footer a').filter({ hasText: 'Privacy & Cookies' }).click();
+    await expect(page).toHaveURL(/\/privacy\?sapphire-tracking-off=1/);
+    await expect(page.locator('iframe')).toHaveCount(0);
+    expect(events(traffic, 'PageView')).toHaveLength(1);
+    if (fallbackStorage) {
+      // The denial-only necessary cookie/session guard also covers an unmarked
+      // direct navigation, not just rewritten links.
+      await page.goto(origin + '/sms-terms');
+      await expect(page.locator('iframe')).toHaveCount(0);
+      await expect(page.locator('#cookie-safety')).toBeVisible();
+    }
+    await page.evaluate(() => (window as any).restoreStorage());
+    await page.getByRole('button', { name: 'Reject optional', exact: true }).first().click();
+    await expect(page.locator('#cookie-banner')).toBeHidden();
+    await expect(page.locator('#cookie-error')).toBeHidden();
+    expect(new URL(page.url()).searchParams.has('sapphire-tracking-off')).toBe(false);
+    const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), TRACKING_STORAGE_KEY);
+    expect(stored.analytics).toBe(false);
+    expect(stored.advertising).toBe(false);
+    expect(events(traffic, 'PageView')).toHaveLength(1);
+  });
+}

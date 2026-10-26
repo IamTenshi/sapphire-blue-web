@@ -2,6 +2,7 @@
   <div>
     <strong>Your privacy choices</strong>
     <p>Optional analytics and advertising stay off until you choose. Your inquiry does not require tracking. <a href="/privacy">Privacy &amp; Cookies</a></p>
+    <p id="cookie-safety" hidden>We could not save a previous choice. Optional tracking is kept off. Save a new choice once browser storage is available.</p>
   </div>
   <div class="cookie-actions">
     <button type="button" class="btn btn-s" data-consent-reject>Reject optional</button>
@@ -30,6 +31,7 @@
   initializeTracking();
 </script>
 <style>
+  :global(body:has(#cookie-banner:not([hidden]))) { padding-bottom:var(--cookie-banner-space,240px); }
   .cookie-banner { position:fixed; z-index:90; bottom:16px; left:16px; right:16px; max-width:1100px; margin:auto; background:#fff; color:#0B1B3A; border:1px solid #c9d4e9; border-radius:20px; box-shadow:0 12px 48px #0b1b3a26; padding:20px; display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
   .cookie-banner[hidden], [hidden] { display:none; }
   .cookie-banner > div:first-child { flex:1 1 320px; }

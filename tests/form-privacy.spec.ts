@@ -196,7 +196,7 @@ test.describe('without JavaScript', () => {
     await page.goto('/');
     await expect(page.locator('#form')).toBeHidden();
     await expect(page.locator('#contact-form noscript p')).toContainText('Please use the email link');
-    await expect(page.locator('#contact a[href^="mailto:"]')).toBeVisible();
+    await expect(page.locator('#contact a[href^="mailto:"]').first()).toBeVisible();
     await expect(page.locator('footer [data-cookie-settings]')).toBeHidden();
     await expect(page.locator('footer noscript p')).toHaveText('Cookie settings require JavaScript. Optional tracking stays off.');
   });
