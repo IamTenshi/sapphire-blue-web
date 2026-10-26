@@ -101,6 +101,8 @@ No se ha modificado Apps Script, su endpoint ni los seis campos del POST. El con
 
 No publicar sin autorización explícita, revisión del texto y cumplimiento de los requisitos externos pertinentes. No hacer push sin comprobar antes las automatizaciones del repositorio: incluso una rama puede crear un preview automáticamente. Este proyecto solo prepara commits locales y propuestas de PR.
 
+La entrega, las ramas/commits, la revisión independiente, los resultados de validación y la PR propuesta están en [`docs/privacy-release.md`](docs/privacy-release.md).
+
 ## Compartir enlaces
 
 - Dominio canónico: `https://www.sapphireblue.studio/`. `vercel.json` configura la redirección permanente del dominio sin `www` al dominio con `www`, conservando la ruta. Mantener el sitio sin protección de acceso para los rastreadores.
