@@ -20,6 +20,16 @@ export function recordMetaLead() {
   }
 }
 
+// Use the same confirmed-success path as Meta; never track form starts or attempts.
+export function recordGoogleLead() {
+  const analyticsWindow = window as Window & { gtag?: (command: 'event', event: 'generate_lead') => void };
+  try {
+    analyticsWindow.gtag?.('event', 'generate_lead');
+  } catch {
+    // Analytics failures must not affect the form or other tracking providers.
+  }
+}
+
 // Local integration hook only by default: no storage, cookies or new requests.
 // Never pass form fields, email addresses, free text or URL parameters here.
 export function recordMarketingEvent<Name extends keyof MarketingEvents>(name: Name, properties: MarketingEvents[Name]) {

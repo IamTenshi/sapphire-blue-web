@@ -58,7 +58,14 @@ async function leadEvents(page: Page) {
   });
 }
 
-test.describe('Meta Pixel Lead', () => {
+async function googleLeadEvents(page: Page) {
+  return page.evaluate(() => {
+    const dataLayer = (window as Window & { dataLayer?: IArguments[] }).dataLayer;
+    return (dataLayer ?? []).map(args => Array.from(args)).filter(args => args[0] === 'event' && args[1] === 'generate_lead');
+  });
+}
+
+test.describe('Meta and Google lead tracking', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('https://connect.facebook.net/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
     await page.route('https://www.facebook.com/**', route => route.abort());
@@ -78,25 +85,33 @@ test.describe('Meta Pixel Lead', () => {
       await gate;
       await route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' });
     });
+    expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await fillContact(page);
+    expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#form')).toHaveAttribute('aria-busy', 'true');
     await expect(page.locator('#sent')).toBeHidden();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await page.locator('#form').evaluate(form => {
       (form as HTMLFormElement).requestSubmit();
       (form as HTMLFormElement).requestSubmit();
     });
     await expect.poll(() => submissions).toBe(1);
+    expect(await googleLeadEvents(page)).toEqual([]);
     release();
     await expect(page.locator('#sent')).toBeVisible();
     expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
+    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
     await page.locator('#again').click();
     await fillContact(page);
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#sent')).toBeVisible();
     expect(submissions).toBe(2);
     expect(await leadEvents(page)).toEqual([['track', 'Lead'], ['track', 'Lead']]);
+    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead'], ['event', 'generate_lead']]);
   });
 
   test('reads the ContentService redirect without a preflight or changes to the form payload', async ({ page }) => {
@@ -136,6 +151,7 @@ test.describe('Meta Pixel Lead', () => {
       expect(new URLSearchParams(payload).get('email')).toBe('pixel-test@example.com');
       expect(new URLSearchParams(payload).get('needs')).toBe('Website');
       expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
+      expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
     } finally {
       await Promise.all([endpoint, confirmation].map(server => new Promise<void>((resolve, reject) => {
         server.close(error => error ? reject(error) : resolve());
@@ -152,17 +168,20 @@ test.describe('Meta Pixel Lead', () => {
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#sent')).toBeHidden();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await page.locator('input[name="name"]').fill('Pixel test');
     await page.locator('input[name="email"]').fill('invalid-email');
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#sent')).toBeHidden();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await page.locator('input[name="email"]').fill('pixel-test@example.com');
     await page.locator('[data-need="website"]').click();
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#needError')).toBeVisible();
     expect(submissions).toBe(0);
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
   });
 
   for (const response of [
@@ -180,6 +199,7 @@ test.describe('Meta Pixel Lead', () => {
       await expect(page.locator('#sent')).toBeHidden();
       await expect(page.locator('input[name="email"]')).toHaveValue('pixel-test@example.com');
       expect(await leadEvents(page)).toEqual([]);
+      expect(await googleLeadEvents(page)).toEqual([]);
     });
   }
 
@@ -194,6 +214,7 @@ test.describe('Meta Pixel Lead', () => {
     await expect(page.locator('#submitError')).toBeVisible();
     await expect(page.locator('#sent')).toBeHidden();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
   });
 
   test('does not track a network failure and tracks only the confirmed retry', async ({ page }) => {
@@ -201,11 +222,13 @@ test.describe('Meta Pixel Lead', () => {
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#submitError')).toBeVisible();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
     await page.route(contactEndpoint, route => route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' }));
     await page.locator('button[type="submit"]').click();
     await expect(page.locator('#sent')).toBeVisible();
     await expect(page.locator('#submitError')).toBeHidden();
     expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
+    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
   });
 
   test('does not track a timeout', async ({ page }) => {
@@ -217,24 +240,28 @@ test.describe('Meta Pixel Lead', () => {
     await page.clock.fastForward(15001);
     await expect(page.locator('#submitError')).toBeVisible();
     expect(await leadEvents(page)).toEqual([]);
+    expect(await googleLeadEvents(page)).toEqual([]);
   });
 
-  for (const state of ['missing', 'throwing']) {
-    test(`a ${state} pixel does not break a confirmed submission`, async ({ page }) => {
-      const errors: string[] = [];
-      page.on('pageerror', error => errors.push(error.message));
-      await page.evaluate(state => {
-        const pixelWindow = window as Window & { fbq?: () => void };
-        if (state === 'missing') delete pixelWindow.fbq;
-        else pixelWindow.fbq = () => { throw new Error('Pixel unavailable'); };
-      }, state);
-      await page.route(contactEndpoint, route => route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' }));
-      await fillContact(page);
-      await page.locator('button[type="submit"]').click();
-      await expect(page.locator('#sent')).toBeVisible();
-      await expect(page.locator('#submitError')).toBeHidden();
-      await expect(page.locator('button[type="submit"]')).toBeEnabled();
-      expect(errors).toEqual([]);
-    });
+  for (const tracker of ['fbq', 'gtag'] as const) {
+    for (const state of ['missing', 'throwing']) {
+      test(`a ${state} ${tracker} does not break a confirmed submission or the other tracker`, async ({ page }) => {
+        const errors: string[] = [];
+        page.on('pageerror', error => errors.push(error.message));
+        await page.evaluate(({ tracker, state }) => {
+          const trackingWindow = window as Window & { fbq?: () => void; gtag?: () => void };
+          trackingWindow[tracker] = state === 'missing' ? undefined : () => { throw new Error('Tracker unavailable'); };
+        }, { tracker, state });
+        await page.route(contactEndpoint, route => route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' }));
+        await fillContact(page);
+        await page.locator('button[type="submit"]').click();
+        await expect(page.locator('#sent')).toBeVisible();
+        await expect(page.locator('#submitError')).toBeHidden();
+        await expect(page.locator('button[type="submit"]')).toBeEnabled();
+        expect(await leadEvents(page)).toEqual(tracker === 'fbq' ? [] : [['track', 'Lead']]);
+        expect(await googleLeadEvents(page)).toEqual(tracker === 'gtag' ? [] : [['event', 'generate_lead']]);
+        expect(errors).toEqual([]);
+      });
+    }
   }
 });

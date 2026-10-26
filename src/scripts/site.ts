@@ -1,5 +1,5 @@
 import { ADS, EMAIL, NEEDS, SOCIAL, calculate, fmt, type Need, type PlanId, type PlanSelection, type Selection } from '../data/pricing';
-import { recordMarketingEvent, recordMetaLead } from './marketing';
+import { recordGoogleLead, recordMarketingEvent, recordMetaLead } from './marketing';
 
 // Required elements belong to this page; fail explicitly if the template drifts.
 function $<T extends HTMLElement = HTMLElement>(selector: string, root: ParentNode = document): T {
@@ -216,6 +216,7 @@ form.addEventListener('submit', async e => {
     const response = await fetch('https://script.google.com/macros/s/AKfycbxTrBiAcoSGTOAf96VUBIAyZEBq7e3N7tNg6ilLPrzFki71ijlj-dgNFLQ1bKLtttnh2A/exec', { method: 'POST', mode: 'cors', redirect: 'follow', credentials: 'omit', body, signal: controller.signal });
     if (!response.ok || (await response.text()).trim() !== 'ok') throw new Error('Submission not confirmed');
     recordMetaLead();
+    recordGoogleLead();
     form.hidden = true;
     const sent = $('#sent');
     sent.hidden = false;
