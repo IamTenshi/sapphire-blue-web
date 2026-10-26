@@ -1,3 +1,5 @@
+import { TRACKING_STORAGE_KEY, TRACKING_TTL_MS, TRACKING_VERSION } from './tracking';
+
 // Human-confirmed business facts. Do not infer identity or contact details from
 // deployment configuration, provider accounts, or the site's service area.
 export const business = {
@@ -5,7 +7,7 @@ export const business = {
   operator: 'Asor Jehovalina Garcia Diaz',
   operatorDescription: 'an independent professional based in the Dominican Republic',
   email: 'hello@sapphireblue.studio',
-  initialAudience: 'adult business and professional users, initially in the United States',
+  initialAudience: 'business and professional users, initially in the United States',
   authorizedAccess: {
     people: 2,
     countries: ['Dominican Republic', 'United States'],
@@ -28,9 +30,9 @@ export const marketingAvailability: { email: boolean; sms: boolean } = {
 
 // Browser tracking preferences are not a verifiable marketing-consent register.
 export const trackingPreferences = {
-  key: 'sapphire.tracking-preferences',
-  version: 1,
-  ttlDays: 180,
+  key: TRACKING_STORAGE_KEY,
+  version: TRACKING_VERSION,
+  ttlDays: TRACKING_TTL_MS / (24 * 60 * 60 * 1000),
 } as const;
 
 export const providers = {
@@ -80,7 +82,7 @@ export const retentionPolicy = {
     period: 'Six months after the last interaction.',
   },
   clients: {
-    record: 'Client relationship records',
+    record: 'Client contact details',
     period: 'One year after the relationship ends, except records needed for applicable fiscal or accounting obligations.',
   },
   accounting: {

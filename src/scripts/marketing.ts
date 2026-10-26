@@ -1,4 +1,5 @@
 import type { AdId, PlanId, PlanSelection } from '../data/pricing';
+import { sendConfirmedLead, sendVercelEvent } from './tracking';
 
 interface MarketingEvents {
   contact_click: { source: 'plan' | 'calculator' | 'website' | 'link' };
@@ -10,24 +11,14 @@ interface MarketingEvents {
   form_error: { reason: 'network_timeout_or_rejection' };
 }
 
-// Only call after Apps Script's success response, never on a click or attempt.
-export function recordMetaLead() {
-  const pixelWindow = window as Window & { fbq?: (command: 'track', event: 'Lead') => void };
-  try {
-    pixelWindow.fbq?.('track', 'Lead');
-  } catch {
-    // A blocked or broken pixel must not turn a confirmed submission into an error.
-  }
-}
-
-// Use the same confirmed-success path as Meta; never track form starts or attempts.
-export function recordGoogleLead() {
-  const analyticsWindow = window as Window & { gtag?: (command: 'event', event: 'generate_lead') => void };
-  try {
-    analyticsWindow.gtag?.('event', 'generate_lead');
-  } catch {
-    // Analytics failures must not affect the form or other tracking providers.
-  }
+const confirmed = new Set<string>();
+// Called once on the confirmed response path, not on clicks, attempts or errors.
+// Mark consumed even when tracking is off: there is deliberately no replay queue.
+export function recordConfirmedLead(submissionId: string) {
+  if (confirmed.has(submissionId)) return;
+  confirmed.add(submissionId);
+  try { sendConfirmedLead(submissionId); }
+  catch { /* A blocked provider cannot change the form's result. */ }
 }
 
 // Local integration hook only by default: no storage, cookies or new requests.
@@ -37,9 +28,5 @@ export function recordMarketingEvent<Name extends keyof MarketingEvents>(name: N
 
   // Vercel custom events require Pro/Enterprise. Opt in only after confirming
   // plan support and privacy requirements; ordinary Hobby analytics is unchanged.
-  if (document.documentElement.dataset.customEvents === 'true') {
-    void import('@vercel/analytics').then(({ track }) => track(name, properties)).catch(() => {
-      // Measurement must never prevent navigation or a contact request.
-    });
-  }
+  void sendVercelEvent(name, properties);
 }

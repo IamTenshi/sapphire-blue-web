@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { EMAIL, SOCIAL } from '../src/data/pricing';
 
 const home = 'https://www.sapphireblue.studio/';

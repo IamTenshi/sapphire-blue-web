@@ -1,12 +1,12 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
-// These reference images are captured from the pre-migration HTML, not Astro.
-// Only the social icon pixels were updated for the responsive WebP optimization.
-// BASELINE_URL is only for explicitly recapturing that original reference.
+// Historic original-*.png files are preserved. The privacy-* references make
+// the intentional contact/footer changes explicit, not silently overwrite them.
 for (const width of [390, 819, 820, 1440]) {
-  test(`original design at ${width}px`, async ({ page }) => {
+  test(`privacy additions preserve the surrounding design at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(process.env.BASELINE_URL ?? '/');
+    await page.getByRole('button', { name: 'Reject optional', exact: true }).first().click();
     await page.evaluate(() => document.fonts.ready);
     await page.evaluate(() => Promise.all(Array.from(document.images, image => {
       image.loading = 'eager';
@@ -14,7 +14,7 @@ for (const width of [390, 819, 820, 1440]) {
     })));
     expect(await page.evaluate(() => document.fonts.check('800 48px Manrope'))).toBe(true);
     await expect(page.locator('#total')).toHaveText('$1,942.20');
-    await expect(page).toHaveScreenshot(`original-${width}.png`, {
+    await expect(page).toHaveScreenshot(`privacy-home-${width}.png`, {
       fullPage: true,
       animations: 'disabled',
       threshold: 0,
@@ -28,6 +28,7 @@ for (const width of [390, 1440]) {
   test(`email plans and configured calculator at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(process.env.BASELINE_URL ?? '/');
+    await page.getByRole('button', { name: 'Reject optional', exact: true }).first().click();
     await page.evaluate(() => document.fonts.ready);
     await page.evaluate(() => Promise.all(Array.from(document.images, image => {
       image.loading = 'eager';

@@ -1,0 +1,48 @@
+<aside id="cookie-banner" class="cookie-banner" aria-label="Tracking preferences" hidden>
+  <div>
+    <strong>Your privacy choices</strong>
+    <p>Optional analytics and advertising stay off until you choose. Your inquiry does not require tracking. <a href="/privacy">Privacy &amp; Cookies</a></p>
+  </div>
+  <div class="cookie-actions">
+    <button type="button" class="btn btn-s" data-consent-reject>Reject optional</button>
+    <button type="button" class="btn btn-s" data-cookie-settings>Configure</button>
+    <button type="button" class="btn btn-p" data-consent-accept>Accept all</button>
+  </div>
+</aside>
+<dialog id="cookie-dialog" class="cookie-dialog" aria-labelledby="cookie-title" aria-describedby="cookie-description">
+  <h2 id="cookie-title">Cookie settings</h2>
+  <p id="cookie-description">Choose independently. Optional tools only run on the production website. Your choices last up to 180 days.</p>
+  <p>Necessary storage remembers these preferences only; it does not authorize tracking or marketing subscriptions.</p>
+  <label class="cookie-choice"><input type="checkbox" checked disabled> Necessary preferences (always available)</label>
+  <label class="cookie-choice"><input id="cookie-analytics" type="checkbox"> Analytics — Google Analytics and Vercel measurement</label>
+  <label class="cookie-choice"><input id="cookie-advertising" type="checkbox"> Advertising — Meta Pixel</label>
+  <p id="cookie-gpc" hidden>Global Privacy Control is enabled. Advertising is off, regardless of a previously saved choice. This does not authorize analytics.</p>
+  <p id="cookie-error" role="alert" hidden>We could not save your choices. Optional tracking remains off. Check browser storage settings and try again.</p>
+  <div class="cookie-actions">
+    <button type="button" class="btn btn-s" data-consent-reject>Reject optional</button>
+    <button type="button" class="btn btn-p" id="cookie-save">Save choices</button>
+    <button type="button" class="btn btn-s" id="cookie-close">Close</button>
+  </div>
+  <p class="cookie-note">Withdrawing permission restarts this page if measurement was loaded. Unsaved form entries may be lost. This cannot remove cookies set on other websites.</p>
+</dialog>
+<script>
+  import { initializeTracking } from '../scripts/tracking';
+  initializeTracking();
+</script>
+<style>
+  .cookie-banner { position:fixed; z-index:90; bottom:16px; left:16px; right:16px; max-width:1100px; margin:auto; background:#fff; color:#0B1B3A; border:1px solid #c9d4e9; border-radius:20px; box-shadow:0 12px 48px #0b1b3a26; padding:20px; display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+  .cookie-banner[hidden], [hidden] { display:none; }
+  .cookie-banner > div:first-child { flex:1 1 320px; }
+  .cookie-banner p { font-size:14px; line-height:1.5; margin:8px 0 0; }
+  .cookie-actions { display:flex; flex-wrap:wrap; gap:10px; }
+  .cookie-actions .btn { font-size:14px; min-height:44px; padding:12px 16px; height:auto; }
+  .cookie-dialog { width:min(600px,calc(100vw - 40px)); max-height:calc(100dvh - 40px); overflow:auto; box-sizing:border-box; padding:28px; border:1px solid #c9d4e9; border-radius:24px; color:#0B1B3A; background:#fff; }
+  .cookie-dialog::backdrop { background:#0b1b3a88; }
+  .cookie-dialog h2 { margin:0 0 16px; font-size:28px; }
+  .cookie-dialog p { line-height:1.6; font-size:14px; }
+  .cookie-choice { display:flex; gap:12px; align-items:flex-start; margin:20px 0; font-size:15px; line-height:1.5; }
+  .cookie-choice input { width:20px; height:20px; flex-shrink:0; accent-color:#155DFC; }
+  .cookie-note { color:#4A5675; }
+  #cookie-error { color:#a31255; }
+  :is(.cookie-banner,.cookie-dialog) a { color:#155DFC; text-decoration:underline; }
+</style>

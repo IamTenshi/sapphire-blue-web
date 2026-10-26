@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import type { Page } from '@playwright/test';
 import { indexablePaths } from '../src/data/seo';
 
 const home = 'https://www.sapphireblue.studio/';
@@ -147,6 +148,7 @@ test('mobile menu resets on navigation, Escape, outside click and breakpoint cha
 
 test('content and contact remain useful without JavaScript', async ({ browser }) => {
   const context = await browser.newContext({ baseURL: test.info().project.use.baseURL, javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  await context.route('**/*', route => ['127.0.0.1', 'localhost'].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
   const page = await context.newPage();
   try {
     await page.goto('/');

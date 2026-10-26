@@ -11,9 +11,13 @@ export default defineConfig({
     baseURL,
     browserName: 'chromium',
     reducedMotion: 'reduce',
+    serviceWorkers: 'block',
   },
   webServer: {
     command: `pnpm build && pnpm preview --host 127.0.0.1 --port ${port} --ignore-lock`,
+    // Production-equivalent static output, served only locally. Tests mirror it
+    // under the canonical origin and intercept every provider before navigation.
+    env: { VERCEL: '1', VERCEL_ENV: 'production', PUBLIC_ENABLE_CUSTOM_EVENTS: 'true' },
     // Waiting for stdout avoids a preflight HTTP probe of a closed local port,
     // which can hang on WSL/firewall setups before Playwright starts the server.
     wait: { stdout: new RegExp(`http://127\\.0\\.0\\.1:${port}(?:/|\\s)`) },

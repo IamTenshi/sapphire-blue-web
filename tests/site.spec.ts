@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { calculate, type PlanSelection, type AdId } from '../src/data/pricing';
 
 test('production styles and fonts avoid render-blocking stylesheet requests', async ({ request }) => {

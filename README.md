@@ -27,7 +27,9 @@ pnpm dev
 - `src/data/pricing.ts`: precios, tipos y cálculo compartidos por las tarjetas y la calculadora.
 - `src/data/faq.ts`: preguntas y respuestas compartidas por el contenido visible y Schema.
 - `src/scripts/site.ts`: navegación, pestañas, FAQ, calculadora, formulario y animaciones.
-- `src/scripts/marketing.ts`: eventos locales del embudo y evento `Lead` de Meta, sin datos personales del formulario.
+- `src/data/business.ts`: operadora, proveedores, conservación prevista y disponibilidad independiente de email/SMS.
+- `src/scripts/tracking.ts`: preferencias e instrumentación opcional; `src/scripts/marketing.ts`: eventos locales y conversiones confirmadas, sin datos personales.
+- `/privacy` y `/sms-terms`: información en inglés, procesos activos y programas previstos diferenciados.
 - `src/styles/global.css`: reglas originales y configuración de Tailwind.
 - `public/`: imágenes, fuentes e iconos, con sus URLs públicas preservadas. El icono de redes sociales se importa con `astro:assets` para generar WebP de 110, 220 y 330 px; `srcset` y `sizes` evitan descargar el PNG original en la página.
 - `src/pages/robots.txt.ts` y `src/pages/sitemap.xml.ts`: archivos estáticos generados desde `Astro.site`. `indexablePaths` en `src/data/seo.ts` enumera las páginas HTML indexables; al añadir páginas hay que actualizarlo.
@@ -37,7 +39,7 @@ pnpm dev
 
 La migración no rediseña la página. Las propiedades arbitrarias de Tailwind conservan los valores CSS originales, sin redondearlos a escalas predefinidas. Los fondos complejos y determinadas prioridades de estilos se mantienen como CSS literal. Preflight está desactivado para no modificar los estilos predeterminados del navegador. Los archivos de imagen se extrajeron de sus data URIs sin cambiar sus bytes.
 
-Las capturas de referencia en `tests/visual.spec.ts-snapshots/` proceden del HTML anterior a la migración. Las pruebas comparan páginas completas a 390, 819, 820 y 1440 px, además de los planes de email y la calculadora configurada a 390 y 1440 px, con tolerancia de **cero píxeles**. Usan Chromium en Linux, la fuente Manrope de Google Fonts (alojada localmente en `public/fonts/`, con su licencia OFL) y movimiento reducido para evitar estados intermedios de animación. Para reproducirlas, utiliza el mismo navegador y sistema; otros sistemas pueden rasterizar fuentes de forma distinta.
+Las capturas históricas en `tests/visual.spec.ts-snapshots/` proceden del HTML anterior a la migración. El proyecto de privacidad añade intencionalmente avisos/opciones al formulario, enlaces al footer y una interfaz de preferencias; no se deben actualizar las referencias antiguas para ocultar esas diferencias. Se conserva comparación exacta de los planes y calculadora y se verifica por separado el contenido comercial no modificado. Se usa Chromium Linux, Manrope local y movimiento reducido.
 
 La optimización del icono de redes sociales actualizó únicamente sus píxeles en las cuatro referencias de página completa, tras verificar que no había diferencias fuera de su rectángulo de 110 × 96 px. Se conservan sus dimensiones y la composición original.
 
@@ -48,7 +50,7 @@ pnpm exec playwright install --with-deps chromium
 pnpm test
 ```
 
-Las pruebas usan un build nuevo en `http://127.0.0.1:4322`, sin reutilizar servidores existentes. Se puede cambiar el puerto con `PLAYWRIGHT_PORT=4338 pnpm test`. No se deben actualizar las capturas de referencia para ocultar regresiones.
+Las pruebas usan un build nuevo en `http://127.0.0.1:4322`, sin reutilizar servidores existentes. Se puede cambiar el puerto con `PLAYWRIGHT_PORT=4338 pnpm test`. La salida simula las variables de un build Vercel de producción únicamente para pruebas locales; se sirve bajo el origen canónico mediante interceptación y se simulan todos los proveedores. `tests/fixtures.ts` bloquea por defecto solicitudes externas antes de navegar. No se generan contactos, SMS ni conversiones reales.
 
 Las pruebas del formulario interceptan las solicitudes: no envían contactos reales ni conversiones reales de Meta. Se conserva el endpoint de Google Apps Script y el cuerpo `URLSearchParams`, pero se usa CORS para leer su confirmación. El contrato del Apps Script facilitado es texto `ok`, devuelto después de guardar la fila en `Respuestas` y llamar a `MailApp.sendEmail`. Solo una respuesta HTTP correcta con ese texto confirma el envío y registra `Lead`; un HTTP 200 vacío, HTML de error o una respuesta opaca no bastan. El formulario bloquea envíos simultáneos y conserva los datos ante errores o un timeout de 15 segundos.
 
@@ -64,10 +66,9 @@ El proyecto es `iamtenshis-projects/sapphire-blue-web`, del equipo `iamtenshi's 
 
 ### Observabilidad
 
-- Web Analytics está habilitado en el proyecto y `@vercel/analytics` monta `<Analytics />` en `src/layouts/BaseLayout.astro`. Habilitarlo en el panel añade las rutas `/_vercel/insights/*` en el despliegue siguiente.
-- `@vercel/speed-insights` monta `<SpeedInsights />` en la misma plantilla. Speed Insights funciona en el tier gratuito, con Real Experience Score y 10.000 eventos por 30 días compartidos en el equipo. Speed Insights Plus requiere el plan Pro ($20 al mes por equipo) más $10 al mes por proyecto y $0.65 por cada 10.000 eventos; no está contratado.
-- Los dos componentes son elementos personalizados inertes: solo cargan el script de recogida de Vercel, sin modificar el HTML visible ni las capturas de las pruebas visuales.
-- Solo se montan en builds de Vercel (`PROD` y `VERCEL=1`). En desarrollo y builds locales se omiten para no solicitar rutas `/_vercel/*` que no existen en localhost.
+- La configuración anterior documentaba Web Analytics y Speed Insights en Vercel; no se ha vuelto a inspeccionar ni modificado la cuenta durante este proyecto.
+- Los componentes incondicionales se han retirado. Los SDK instalados solo se cargan después de autorizar analítica, en producción canónica, y con contexto de URL/referrer seguro. Los callbacks vuelven a comprobar el permiso y sanean las URLs.
+- Los eventos personalizados siguen desactivados en `.env.example`; requieren confirmar por separado disponibilidad y coste del plan, además del permiso del visitante. No se ha contratado ni activado ningún servicio.
 
 ### Dominio
 
@@ -84,11 +85,21 @@ La ampliación en `feat/seo-geo-growth` conserva el diseño y el copy comercial.
 
 ### Eventos de marketing
 
-El código base de Meta Pixel está en `src/layouts/BaseLayout.astro`: carga `fbevents.js` y registra un `PageView` por carga de página en todas las páginas que usan la plantilla, incluida la 404. El respaldo `<noscript>` está en el cuerpo del documento para mantener HTML válido. También se incluye en desarrollo y previews. `src/scripts/site.ts` llama a `recordMetaLead()` únicamente después de verificar la respuesta `ok` del formulario; este ejecuta `fbq('track', 'Lead')` sin datos personales ni coincidencias avanzadas. Nunca se registra en el clic, ante campos inválidos, errores o respuestas ilegibles. Un píxel ausente o que lance un error no altera el envío confirmado. El sitio no dispone de gestor de consentimiento: revisar los requisitos de privacidad y consentimiento antes de desplegar esta integración. Tras publicar, comprobar con Meta Pixel Helper y «Probar eventos» en el Administrador de eventos; las pruebas locales interceptan Meta y no acreditan recepción real.
+El gestor bloquea analítica y publicidad hasta una elección válida, versionada y con caducidad de 180 días. “Cookie settings” permite cambiarla; GPC veta publicidad sin conceder analítica. Desarrollo y previews no ejecutan seguimiento opcional. No existe respaldo Meta sin JavaScript.
+
+Google se ejecuta en un iframe aislado sin acceso al formulario ni al URL principal y sin almacenamiento persistente de cliente. Meta utiliza solicitudes Pixel explícitas sin SDK automático, cookies, coincidencias avanzadas ni Conversion API. Es una decisión de minimización que reduce atribución; las pruebas verifican red simulada, no recepción por las cuentas. Revisar la arquitectura, limitaciones y procedimiento en [`docs/tracking-privacy.md`](docs/tracking-privacy.md).
+
+`recordConfirmedLead(id)` solo se llama tras HTTP correcto y texto `ok`: `Lead` requiere publicidad vigente y `generate_lead` analítica vigente al confirmar. No hay conversiones por intentos, errores ni reproducción posterior al aceptar. Fallos de medición no alteran el formulario.
 
 Por defecto, `document` emite `sapphire:marketing` con `{ name, properties }`, sin cookies, persistencia ni solicitudes adicionales. **Esto es instrumentación, no un panel de conversiones:** sin un receptor autorizado no se almacenan eventos. No se incluyen nombres, correos, teléfonos, mensajes ni parámetros de campaña en sus propiedades.
 
-Vercel reserva los eventos personalizados para Pro y Enterprise. Solo después de confirmar plan, coste y requisitos de privacidad se puede configurar `PUBLIC_ENABLE_CUSTOM_EVENTS=true`. Se enviarán con el SDK ya instalado únicamente en builds de Vercel con `VERCEL_ENV=production`; quedan desactivados en desarrollo, builds locales sin esas variables y previews. No se ha activado la variable en Vercel ni contratado un plan.
+### Permisos comerciales y publicación
+
+Email quincenal/comercial y SMS automatizados vía Brevo son programas previstos, **desactivados por separado**. Las casillas son opcionales, desmarcadas y bloqueadas con una explicación visible. No se transmite una autorización que el flujo actual no garantiza guardar. Un `ok` confirma la consulta según el contrato existente, no una suscripción.
+
+No se ha modificado Apps Script, su endpoint ni los seis campos del POST. El contrato futuro preparado, las pruebas de persistencia y los requisitos para habilitar cada canal están en [`docs/contact-permissions.md`](docs/contact-permissions.md). La información del negocio y los límites operativos se documentan en [`docs/business-privacy.md`](docs/business-privacy.md).
+
+No publicar sin autorización explícita, revisión del texto y cumplimiento de los requisitos externos pertinentes. No hacer push sin comprobar antes las automatizaciones del repositorio: incluso una rama puede crear un preview automáticamente. Este proyecto solo prepara commits locales y propuestas de PR.
 
 ## Compartir enlaces
 
