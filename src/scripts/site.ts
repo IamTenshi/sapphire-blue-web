@@ -1,5 +1,7 @@
 import { ADS, EMAIL, NEEDS, SOCIAL, calculate, fmt, type Need, type PlanId, type PlanSelection, type Selection } from '../data/pricing';
-import { recordGoogleLead, recordMarketingEvent, recordMetaLead } from './marketing';
+import { marketingAvailability } from '../data/business';
+import { contactPermissionAvailability, prepareContactPermissions } from '../data/contact-permissions';
+import { recordConfirmedLead, recordMarketingEvent } from './marketing';
 
 // Required elements belong to this page; fail explicitly if the template drifts.
 function $<T extends HTMLElement = HTMLElement>(selector: string, root: ParentNode = document): T {
@@ -132,7 +134,17 @@ const form = $<HTMLFormElement>('#form');
 const message = $<HTMLTextAreaElement>('textarea[name="message"]', form);
 const submit = $<HTMLButtonElement>('button[type="submit"]', form);
 const submitLabel = submit.textContent;
+const emailMarketing = $<HTMLInputElement>('input[name="email_marketing"]', form);
+const smsMarketing = $<HTMLInputElement>('input[name="sms_marketing"]', form);
+const phone = $<HTMLInputElement>('input[name="phone"]', form);
+const permissionError = $('#permissionError');
+const availablePermissions = contactPermissionAvailability(marketingAvailability);
 let submitting = false;
+function clearPermissionError() {
+  permissionError.hidden = true;
+  [emailMarketing, smsMarketing, phone].forEach(control => control.removeAttribute('aria-invalid'));
+}
+[emailMarketing, smsMarketing, phone].forEach(control => control.addEventListener('input', clearPermissionError));
 function renderNeeds() {
   $$('[data-need]').forEach(b => {
     const selected = !!st.picks[b.dataset.need as Need];
@@ -155,6 +167,7 @@ function showForm() {
   $('#sent').hidden = true;
   $('#sent').style.display = '';
   $('#submitError').hidden = true;
+  clearPermissionError();
 }
 function prefill(needs: Need[], text: string) {
   if (submitting) return;
@@ -184,13 +197,37 @@ $('#getPlan').addEventListener('click', () => {
 $$<HTMLAnchorElement>('a[href="#contact"]').forEach(link => link.addEventListener('click', () => {
   recordMarketingEvent('contact_click', { source: link.dataset.plan ? 'plan' : link.id === 'getPlan' ? 'calculator' : link.dataset.prefill === 'website' ? 'website' : 'link' });
 }));
-$$<HTMLAnchorElement>('a[href="mailto:hello@sapphireblue.studio"]').forEach(link => link.addEventListener('click', () => {
+$$<HTMLAnchorElement>('a[href^="mailto:"]').forEach(link => link.addEventListener('click', () => {
   recordMarketingEvent('email_click', {});
 }));
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
   if (submitting) return;
+  clearPermissionError();
+  $('#submitError').hidden = true;
+  // Read checked properties directly: FormData omits disabled controls and would
+  // silently discard stale/tampered opt-ins instead of rejecting them visibly.
+  const permissionPreparation = prepareContactPermissions({
+    email_marketing: emailMarketing.checked,
+    sms_marketing: smsMarketing.checked,
+    email: $<HTMLInputElement>('input[name="email"]', form).value,
+    phone: phone.value,
+  }, availablePermissions);
+  if (!permissionPreparation.ok) {
+    permissionError.textContent = permissionPreparation.error;
+    permissionError.hidden = false;
+    const invalidControl = permissionPreparation.field === 'phone' ? phone
+      : permissionPreparation.field === 'email_marketing' ? emailMarketing : smsMarketing;
+    invalidControl.setAttribute('aria-invalid', 'true');
+    permissionError.focus();
+    return;
+  }
+  // Native submit validation can be bypassed by synthetic submit events.
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
   const selected = (Object.keys(st.picks) as Need[]).filter(k => st.picks[k]);
   if (!selected.length) {
     $('#needError').hidden = false;
@@ -202,8 +239,17 @@ form.addEventListener('submit', async e => {
   const body = new URLSearchParams();
   ['name', 'business', 'email', 'phone', 'message'].forEach(k => body.append(k, String(fd.get(k) || '')));
   body.append('needs', selected.map(k => NEEDS[k]).join(', '));
+  // permissionPreparation.permissions remains local-only. No consent fields may
+  // be appended until their mapping AND saved records have been verified.
+  const requestId = crypto.randomUUID();
+  const controls = Array.from(form.elements).filter(
+    (control): control is HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | HTMLSelectElement =>
+      control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement
+      || control instanceof HTMLButtonElement || control instanceof HTMLSelectElement,
+  );
+  const previousDisabled = controls.map(control => control.disabled);
   submitting = true;
-  submit.disabled = true;
+  controls.forEach(control => { control.disabled = true; });
   submit.textContent = 'Sending…';
   form.setAttribute('aria-busy', 'true');
   $('#submitError').hidden = true;
@@ -215,8 +261,7 @@ form.addEventListener('submit', async e => {
     // ContentService redirect. Apps Script returns "ok" after saving and notifying.
     const response = await fetch('https://script.google.com/macros/s/AKfycbxTrBiAcoSGTOAf96VUBIAyZEBq7e3N7tNg6ilLPrzFki71ijlj-dgNFLQ1bKLtttnh2A/exec', { method: 'POST', mode: 'cors', redirect: 'follow', credentials: 'omit', body, signal: controller.signal });
     if (!response.ok || (await response.text()).trim() !== 'ok') throw new Error('Submission not confirmed');
-    recordMetaLead();
-    recordGoogleLead();
+    recordConfirmedLead(requestId);
     form.hidden = true;
     const sent = $('#sent');
     sent.hidden = false;
@@ -229,12 +274,13 @@ form.addEventListener('submit', async e => {
   } finally {
     window.clearTimeout(timeout);
     submitting = false;
-    submit.disabled = false;
+    controls.forEach((control, index) => { control.disabled = previousDisabled[index]; });
     submit.textContent = submitLabel;
     form.removeAttribute('aria-busy');
   }
 });
 $('#again').onclick = () => {
+  if (submitting) return;
   form.reset();
   st.picks = { website: true };
   renderNeeds();
