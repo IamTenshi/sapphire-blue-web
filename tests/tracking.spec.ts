@@ -101,7 +101,10 @@ test('withdrawal reloads without optional SDKs and keeps a rejection', async ({ 
   await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
   await expect.poll(() => scripts.length).toBe(3);
   await page.locator('footer [data-cookie-settings]').click();
-  await page.getByRole('button', { name: 'Reject optional', exact: true }).last().click();
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.getByRole('button', { name: 'Reject optional', exact: true }).last().click(),
+  ]);
   await expect(page.locator('iframe')).toHaveCount(0);
   await expect(page.locator('#cookie-banner')).toBeHidden();
   expect(scripts).toHaveLength(3);
@@ -293,3 +296,30 @@ for (const fallbackStorage of [true, false]) {
     expect(events(traffic, 'PageView')).toHaveLength(1);
   });
 }
+
+test('a sensitive incoming referrer suppresses Vercel and is not forwarded to the isolated providers', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic, scripts } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin + '/privacy', { referer: origin + '/?email=PRIVATE@example.com' });
+  expect(await page.evaluate(() => document.referrer)).toContain('PRIVATE');
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(0);
+  expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
+  for (const item of traffic) expect(item.headers.referer).toBeUndefined();
+});
+
+test('an unsafe history change restarts without Vercel and keeps provider URLs sanitized', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic, scripts } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin);
+  await expect.poll(() => scripts.filter(url => url.includes('/_vercel/')).length).toBe(2);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.evaluate(() => history.pushState({}, '', '/?email=PRIVATE@example.com#PRIVATE-message')),
+  ]);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(2);
+  expect(scripts.filter(url => url.includes('/_vercel/'))).toHaveLength(2);
+  expect(JSON.stringify(traffic)).not.toContain('PRIVATE');
+});
