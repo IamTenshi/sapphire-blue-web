@@ -1,0 +1,81 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import {
+  business,
+  marketingAvailability,
+  marketingPrograms,
+  noticeVersions,
+  providers,
+  retentionPolicy,
+} from '../data/business';
+---
+
+<LegalLayout
+  title="SMS Terms"
+  description="The intended terms for Sapphire Blue automated marketing texts. The SMS program is not active and is not accepting subscriptions."
+  version={noticeVersions.sms}
+>
+  <div class="notice">
+    <p><strong>SMS status: {marketingAvailability.sms ? 'enabled' : 'disabled — not accepting subscriptions'}.</strong></p>
+    <p>This page describes a planned program, not an active sign-up offer. A verifiable permission register and operational SMS setup have not been implemented. Providing a phone number in a business inquiry does not subscribe you.</p>
+  </div>
+
+  <h2>Operator and intended sender</h2>
+  <p>
+    {business.brand} is operated by {business.operator}, {business.operatorDescription}.
+    The intended brand and sender identity for this program is {business.brand}, using {providers.marketing.name} as the proposed delivery provider.
+    No operational SMS program number or sender has been established for this site.
+  </p>
+  <p>
+    For questions, contact Asor at <a href={`mailto:${business.email}`}>{business.email}</a>.
+    The site is intended for {business.initialAudience}.
+  </p>
+
+  <h2>What the planned messages would cover</h2>
+  <p>{marketingPrograms.sms.purpose} {marketingPrograms.sms.frequency} {marketingPrograms.sms.charges}</p>
+  <p>
+    These would be commercial messages from {business.brand}, not a requirement for ordinary business correspondence.
+    There is no currently operating automated SMS service or delivery commitment under these terms.
+  </p>
+
+  <h2>A separate, optional choice</h2>
+  <p>
+    If launched, automated marketing texts would require a separate, optional SMS opt-in supported by a verifiable permission record.
+    Choosing email marketing would not also choose SMS, and choosing SMS would not also choose email.
+    Permission would not be a condition of purchasing services, receiving a quote or sending an inquiry.
+  </p>
+  <p>
+    The phone field in the current inquiry form is for contact about the request, not an SMS marketing enrollment mechanism.
+    Neither the existence of this page nor submitting that form activates a subscription.
+  </p>
+
+  <h2>Intended opt-out and help — not operational</h2>
+  <p>
+    <strong>STOP</strong> is the intended SMS opt-out command for a future launch.
+    There is currently no configured program number, operational STOP handler or operational HELP workflow for this site.
+    Do not rely on texting STOP or HELP now, or send them to an unverified number expecting an automated response.
+  </p>
+  <p>
+    Until the program is configured, email <a href={`mailto:${business.email}`}>{business.email}</a> for questions or a manual request about information you have already shared.
+    {business.operator} handles these requests manually. No automated SMS support or response-time guarantee is offered.
+  </p>
+  <p>
+    Before any launch, the sender identity, opt-out and help instructions, permission records and handling of withdrawals must be configured and verified,
+    and these terms must be reviewed to reflect the actual program.
+  </p>
+
+  <h2>Privacy and records</h2>
+  <p>
+    See <a href="/privacy">Privacy &amp; Cookies</a> for the operator, current providers, access from the Dominican Republic and United States,
+    optional website measurement, intended retention and manual privacy requests.
+    {providers.marketing.name} is planned only and is not part of the current contact-processing integration.
+  </p>
+  <p>
+    For a future program, only the relevant phone number, subscription choices and evidence needed to manage permission and opt-outs should be used for enrollment.
+    The intended retention for {retentionPolicy.permissions.record.toLowerCase()} is: {retentionPolicy.permissions.period.toLowerCase()}
+    That is a retention target, not an implemented permission register or automatic deletion system.
+  </p>
+  <p>
+    The version label on this page identifies its wording only. It does not demonstrate that an opt-in was collected or verified.
+  </p>
+</LegalLayout>

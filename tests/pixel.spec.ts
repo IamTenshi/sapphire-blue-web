@@ -1,267 +1,189 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import { cors, endpoint, events, fillContact, mockProduction, origin, preference, seed } from './tracking-helpers';
 import { createServer } from 'node:http';
 
-for (const path of ['/', '/404.html']) {
-  test(`Meta Pixel initializes once and queues PageView on ${path}`, async ({ page }) => {
-    let loads = 0;
-    await page.route('https://connect.facebook.net/**', route => {
-      loads++;
-      return route.fulfill({ contentType: 'application/javascript', body: '' });
-    });
-    await page.route('https://www.facebook.com/**', route => route.abort());
-    await page.goto(path);
-    const queue = await page.evaluate(() => {
-      const pixel = (window as unknown as { fbq: { queue: IArguments[] } }).fbq;
-      return pixel.queue.map(args => Array.from(args));
-    });
-    expect(queue).toEqual([
-      ['init', '1053877131029984'],
-      ['track', 'PageView'],
-    ]);
-    expect(loads).toBe(1);
-    expect(await page.locator('body > noscript').allTextContents()).toContainEqual(
-      expect.stringContaining('https://www.facebook.com/tr?id=1053877131029984&amp;ev=PageView&amp;noscript=1'),
-    );
+test('confirmed success only, independently authorized conversions, no concurrent duplicates or replay', async ({ page, request, baseURL }) => {
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  await page.goto(origin);
+  let submissions = 0;
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route(endpoint, async route => {
+    submissions++;
+    await gate;
+    return route.fulfill({ headers: cors, body: 'ok' });
   });
-}
-
-test('Meta Pixel has a hidden PageView fallback without JavaScript', async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
-  const page = await context.newPage();
-  const requests: string[] = [];
-  await page.route('https://www.facebook.com/**', route => {
-    requests.push(route.request().url());
-    return route.abort();
-  });
-  await page.goto(baseURL!);
-  const image = page.locator('noscript img');
-  await expect(image).toHaveAttribute('alt', '');
-  await expect(image).toBeHidden();
-  expect(requests).toEqual([
-    'https://www.facebook.com/tr?id=1053877131029984&ev=PageView&noscript=1',
-  ]);
-  await context.close();
+  await fillContact(page);
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#form')).toHaveAttribute('aria-busy', 'true');
+  await page.locator('#form').evaluate(form => { (form as HTMLFormElement).requestSubmit(); (form as HTMLFormElement).requestSubmit(); });
+  expect(submissions).toBe(1);
+  expect(events(traffic, 'Lead')).toHaveLength(0);
+  expect(events(traffic, 'generate_lead')).toHaveLength(0);
+  release();
+  await expect(page.locator('#sent')).toBeVisible();
+  await page.getByRole('button', { name: 'Accept all', exact: true }).click();
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+  expect(events(traffic, 'Lead')).toHaveLength(0);
+  expect(events(traffic, 'generate_lead')).toHaveLength(0);
+  await page.locator('#again').click();
+  await fillContact(page);
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#sent')).toBeVisible();
+  await expect.poll(() => events(traffic, 'Lead').length).toBe(1);
+  await expect.poll(() => events(traffic, 'generate_lead').length).toBe(1);
+  expect(submissions).toBe(2);
+  expect(JSON.stringify(traffic)).not.toMatch(/private-test|Private test|PRIVATE message|12025550123/);
 });
 
-const contactEndpoint = 'https://script.google.com/**';
-const corsHeaders = { 'access-control-allow-origin': '*' };
-
-async function fillContact(page: Page) {
-  await page.locator('input[name="name"]').fill('Pixel test');
-  await page.locator('input[name="email"]').fill('pixel-test@example.com');
-}
-
-async function leadEvents(page: Page) {
-  return page.evaluate(() => {
-    const pixel = (window as unknown as { fbq?: { queue?: IArguments[] } }).fbq;
-    return (pixel?.queue ?? []).map(args => Array.from(args)).filter(args => args[0] === 'track' && args[1] === 'Lead');
-  });
-}
-
-async function googleLeadEvents(page: Page) {
-  return page.evaluate(() => {
-    const dataLayer = (window as Window & { dataLayer?: IArguments[] }).dataLayer;
-    return (dataLayer ?? []).map(args => Array.from(args)).filter(args => args[0] === 'event' && args[1] === 'generate_lead');
-  });
-}
-
-test.describe('Meta and Google lead tracking', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route('https://connect.facebook.net/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
-    await page.route('https://www.facebook.com/**', route => route.abort());
-    await page.route('https://www.googletagmanager.com/**', route => route.abort());
-    // Fail closed unless a test explicitly mocks the contact response.
-    await page.route(contactEndpoint, route => route.abort());
-    await page.route('https://script.googleusercontent.com/**', route => route.abort());
-    await page.goto('/');
-  });
-
-  test('tracks once only after confirmation, prevents concurrent duplicates and allows another lead', async ({ page }) => {
-    let submissions = 0;
-    let release!: () => void;
-    const gate = new Promise<void>(resolve => { release = resolve; });
-    await page.route(contactEndpoint, async route => {
-      submissions++;
-      await gate;
-      await route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' });
-    });
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
+for (const [analytics, advertising] of [[true, false], [false, true], [false, false]]) {
+  test(`lead checks permission at response: analytics=${analytics}, advertising=${advertising}`, async ({ page, request, baseURL }) => {
+    await seed(page, preference(analytics, advertising));
+    const { traffic } = await mockProduction(page, request, baseURL!);
+    await page.route(endpoint, route => route.fulfill({ headers: cors, body: 'ok' }));
+    await page.goto(origin);
+    if (analytics) await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+    if (advertising) await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
     await fillContact(page);
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#form')).toHaveAttribute('aria-busy', 'true');
+    await page.locator('#form button[type="submit"]').click();
+    await expect(page.locator('#sent')).toBeVisible();
+    if (analytics) await expect.poll(() => events(traffic, 'generate_lead').length).toBe(1);
+    if (advertising) await expect.poll(() => events(traffic, 'Lead').length).toBe(1);
+    expect(events(traffic, 'generate_lead')).toHaveLength(analytics ? 1 : 0);
+    expect(events(traffic, 'Lead')).toHaveLength(advertising ? 1 : 0);
+  });
+}
+
+for (const response of [
+  { name: 'HTTP 400', status: 400, body: 'ok' },
+  { name: 'HTTP 500', status: 500, body: 'ok' },
+  { name: 'empty response', status: 200, body: '' },
+  { name: 'ambiguous response', status: 200, body: 'success' },
+  { name: 'error HTML', status: 200, body: '<html>Error</html>' },
+  { name: 'unreadable CORS', status: 200, body: 'ok', origin: 'https://wrong.example' },
+  { name: 'network failure', status: 0, body: '' },
+]) {
+  test(`no conversion for ${response.name}`, async ({ page, request, baseURL }) => {
+    await seed(page, preference(true, true));
+    const { traffic } = await mockProduction(page, request, baseURL!);
+    await page.route(endpoint, route => response.status ? route.fulfill({ status: response.status, headers: { 'access-control-allow-origin': response.origin ?? '*' }, body: response.body }) : route.abort());
+    await page.goto(origin);
+    await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+    await fillContact(page);
+    await page.locator('#form button[type="submit"]').click();
+    await expect(page.locator('#submitError')).toBeVisible();
     await expect(page.locator('#sent')).toBeHidden();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-    await page.locator('#form').evaluate(form => {
-      (form as HTMLFormElement).requestSubmit();
-      (form as HTMLFormElement).requestSubmit();
-    });
-    await expect.poll(() => submissions).toBe(1);
-    expect(await googleLeadEvents(page)).toEqual([]);
+    expect(events(traffic, 'Lead')).toHaveLength(0);
+    expect(events(traffic, 'generate_lead')).toHaveLength(0);
+  });
+}
+
+test('a changed preference during an in-flight request is checked again at confirmation', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route(endpoint, async route => { await gate; return route.fulfill({ headers: cors, body: 'ok' }); });
+  await page.goto(origin);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await fillContact(page);
+  await page.locator('#form button[type="submit"]').click();
+  // No storage event in this document: exercise the event-time check before the poll.
+  await page.evaluate(() => localStorage.removeItem('sapphire.tracking-preferences'));
+  release();
+  await expect(page.locator('#sent')).toBeVisible();
+  expect(events(traffic, 'Lead')).toHaveLength(0);
+  expect(events(traffic, 'generate_lead')).toHaveLength(0);
+});
+
+test('missing or blocked measurement does not break confirmed inquiry', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  await mockProduction(page, request, baseURL!);
+  await page.route('https://www.googletagmanager.com/**', route => route.abort());
+  await page.route('https://connect.facebook.net/**', route => route.abort());
+  await page.route('https://www.facebook.com/**', route => route.abort());
+  await page.route(endpoint, route => route.fulfill({ headers: cors, body: 'ok' }));
+  await page.goto(origin);
+  await fillContact(page);
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#sent')).toBeVisible();
+  await expect(page.locator('#submitError')).toBeHidden();
+});
+
+test('an unconfirmed timeout never emits a conversion', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  await page.route(endpoint, () => {});
+  await page.goto(origin);
+  await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+  await page.clock.install();
+  await fillContact(page);
+  await page.locator('#form button[type="submit"]').click();
+  await expect(page.locator('#form')).toHaveAttribute('aria-busy', 'true');
+  await page.clock.fastForward(15_001);
+  await expect(page.locator('#submitError')).toBeVisible();
+  expect(events(traffic, 'Lead')).toHaveLength(0);
+  expect(events(traffic, 'generate_lead')).toHaveLength(0);
+});
+
+test('a late SDK load cannot replay a completed inquiry as a conversion', async ({ page, request, baseURL }) => {
+  await seed(page, preference(true, true));
+  const { traffic } = await mockProduction(page, request, baseURL!);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route(/https:\/\/(?:www\.googletagmanager\.com|connect\.facebook\.net)\//, async route => {
+    await gate;
+    await route.fallback();
+  });
+  await page.route(endpoint, route => route.fulfill({ headers: cors, body: 'ok' }));
+  try {
+    await page.goto(origin, { waitUntil: 'domcontentloaded' });
+    await fillContact(page);
+    await page.locator('#form button[type="submit"]').click();
+    await expect(page.locator('#sent')).toBeVisible();
+    expect(events(traffic, 'Lead')).toHaveLength(0);
+    expect(events(traffic, 'generate_lead')).toHaveLength(0);
     release();
+    await expect.poll(() => events(traffic, 'PageView').length).toBe(1);
+    await expect.poll(() => events(traffic, 'page_view').length).toBe(1);
+    expect(events(traffic, 'Lead')).toHaveLength(0);
+    expect(events(traffic, 'generate_lead')).toHaveLength(0);
+  } finally { release(); }
+});
+
+test('the unchanged form POST follows a readable ContentService-style redirect without preflight', async ({ page }) => {
+  const methods: string[] = [];
+  let payload = '';
+  const confirmation = createServer((request, response) => {
+    methods.push(request.method!);
+    response.writeHead(200, { ...cors, 'content-type': 'text/plain' });
+    response.end('ok');
+  });
+  await new Promise<void>(resolve => confirmation.listen(0, '127.0.0.1', resolve));
+  const confirmationPort = (confirmation.address() as { port: number }).port;
+  const upstream = createServer((request, response) => {
+    methods.push(request.method!);
+    request.on('data', chunk => { payload += chunk.toString(); });
+    request.on('end', () => {
+      response.writeHead(302, { ...cors, location: `http://127.0.0.1:${confirmationPort}/confirmation` });
+      response.end();
+    });
+  });
+  try {
+    await new Promise<void>(resolve => upstream.listen(0, '127.0.0.1', resolve));
+    const port = (upstream.address() as { port: number }).port;
+    await page.goto('/');
+    await page.evaluate(url => {
+      const originalFetch = window.fetch;
+      window.fetch = (input, init) => originalFetch(typeof input === 'string' && input.startsWith('https://script.google.com/') ? url : input, init);
+    }, `http://127.0.0.1:${port}/exec`);
+    await fillContact(page);
+    await page.locator('#form button[type="submit"]').click();
     await expect(page.locator('#sent')).toBeVisible();
-    expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
-    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
-    await page.locator('#again').click();
-    await fillContact(page);
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#sent')).toBeVisible();
-    expect(submissions).toBe(2);
-    expect(await leadEvents(page)).toEqual([['track', 'Lead'], ['track', 'Lead']]);
-    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead'], ['event', 'generate_lead']]);
-  });
-
-  test('reads the ContentService redirect without a preflight or changes to the form payload', async ({ page }) => {
-    const methods: string[] = [];
-    let payload = '';
-    // Browser routing does not intercept the target of a mocked redirect. Use
-    // local upstreams so the browser follows a real cross-origin redirect.
-    const confirmation = createServer((request, response) => {
-      methods.push(request.method!);
-      response.writeHead(200, { ...corsHeaders, 'content-type': 'text/plain' });
-      response.end('ok');
-    });
-    await new Promise<void>(resolve => confirmation.listen(0, '127.0.0.1', resolve));
-    const confirmationPort = (confirmation.address() as { port: number }).port;
-    const endpoint = createServer((request, response) => {
-      methods.push(request.method!);
-      request.on('data', chunk => { payload += chunk.toString(); });
-      request.on('end', () => {
-        response.writeHead(302, { ...corsHeaders, location: `http://127.0.0.1:${confirmationPort}/confirmation` });
-        response.end();
-      });
-    });
-    try {
-      await new Promise<void>(resolve => endpoint.listen(0, '127.0.0.1', resolve));
-      const port = (endpoint.address() as { port: number }).port;
-      await page.evaluate(url => {
-        const originalFetch = window.fetch;
-        window.fetch = (input, init) => originalFetch(
-          typeof input === 'string' && input.startsWith('https://script.google.com/') ? url : input,
-          init,
-        );
-      }, `http://127.0.0.1:${port}/exec`);
-      await fillContact(page);
-      await page.locator('button[type="submit"]').click();
-      await expect(page.locator('#sent')).toBeVisible();
-      expect(methods).toEqual(['POST', 'GET']);
-      expect(new URLSearchParams(payload).get('email')).toBe('pixel-test@example.com');
-      expect(new URLSearchParams(payload).get('needs')).toBe('Website');
-      expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
-      expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
-    } finally {
-      await Promise.all([endpoint, confirmation].map(server => new Promise<void>((resolve, reject) => {
-        server.close(error => error ? reject(error) : resolve());
-      })));
-    }
-  });
-
-  test('does not track or send empty fields, invalid email or missing needs', async ({ page }) => {
-    let submissions = 0;
-    await page.route(contactEndpoint, async route => {
-      submissions++;
-      await route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' });
-    });
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#sent')).toBeHidden();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-    await page.locator('input[name="name"]').fill('Pixel test');
-    await page.locator('input[name="email"]').fill('invalid-email');
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#sent')).toBeHidden();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-    await page.locator('input[name="email"]').fill('pixel-test@example.com');
-    await page.locator('[data-need="website"]').click();
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#needError')).toBeVisible();
-    expect(submissions).toBe(0);
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-  });
-
-  for (const response of [
-    { name: 'HTTP 400 even with ok', status: 400, body: 'ok' },
-    { name: 'HTTP 500 even with ok', status: 500, body: 'ok' },
-    { name: 'empty HTTP 200', status: 200, body: '' },
-    { name: 'application error with HTTP 200', status: 200, body: 'error' },
-    { name: 'Google error page with HTTP 200', status: 200, body: '<html><body>Script error</body></html>' },
-  ]) {
-    test(`does not track ${response.name}`, async ({ page }) => {
-      await page.route(contactEndpoint, route => route.fulfill({ status: response.status, headers: corsHeaders, body: response.body }));
-      await fillContact(page);
-      await page.locator('button[type="submit"]').click();
-      await expect(page.locator('#submitError')).toBeVisible();
-      await expect(page.locator('#sent')).toBeHidden();
-      await expect(page.locator('input[name="email"]')).toHaveValue('pixel-test@example.com');
-      expect(await leadEvents(page)).toEqual([]);
-      expect(await googleLeadEvents(page)).toEqual([]);
-    });
-  }
-
-  test('does not track an unreadable CORS response', async ({ page }) => {
-    await page.route(contactEndpoint, route => route.fulfill({
-      status: 200,
-      headers: { 'access-control-allow-origin': 'https://different-origin.example' },
-      body: 'ok',
-    }));
-    await fillContact(page);
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#submitError')).toBeVisible();
-    await expect(page.locator('#sent')).toBeHidden();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-  });
-
-  test('does not track a network failure and tracks only the confirmed retry', async ({ page }) => {
-    await fillContact(page);
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#submitError')).toBeVisible();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-    await page.route(contactEndpoint, route => route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' }));
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#sent')).toBeVisible();
-    await expect(page.locator('#submitError')).toBeHidden();
-    expect(await leadEvents(page)).toEqual([['track', 'Lead']]);
-    expect(await googleLeadEvents(page)).toEqual([['event', 'generate_lead']]);
-  });
-
-  test('does not track a timeout', async ({ page }) => {
-    await page.clock.install();
-    await page.route(contactEndpoint, () => {});
-    await fillContact(page);
-    await page.locator('button[type="submit"]').click();
-    await expect(page.locator('#form')).toHaveAttribute('aria-busy', 'true');
-    await page.clock.fastForward(15001);
-    await expect(page.locator('#submitError')).toBeVisible();
-    expect(await leadEvents(page)).toEqual([]);
-    expect(await googleLeadEvents(page)).toEqual([]);
-  });
-
-  for (const tracker of ['fbq', 'gtag'] as const) {
-    for (const state of ['missing', 'throwing']) {
-      test(`a ${state} ${tracker} does not break a confirmed submission or the other tracker`, async ({ page }) => {
-        const errors: string[] = [];
-        page.on('pageerror', error => errors.push(error.message));
-        await page.evaluate(({ tracker, state }) => {
-          const trackingWindow = window as Window & { fbq?: () => void; gtag?: () => void };
-          trackingWindow[tracker] = state === 'missing' ? undefined : () => { throw new Error('Tracker unavailable'); };
-        }, { tracker, state });
-        await page.route(contactEndpoint, route => route.fulfill({ status: 200, headers: corsHeaders, body: 'ok' }));
-        await fillContact(page);
-        await page.locator('button[type="submit"]').click();
-        await expect(page.locator('#sent')).toBeVisible();
-        await expect(page.locator('#submitError')).toBeHidden();
-        await expect(page.locator('button[type="submit"]')).toBeEnabled();
-        expect(await leadEvents(page)).toEqual(tracker === 'fbq' ? [] : [['track', 'Lead']]);
-        expect(await googleLeadEvents(page)).toEqual(tracker === 'gtag' ? [] : [['event', 'generate_lead']]);
-        expect(errors).toEqual([]);
-      });
-    }
+    expect(methods).toEqual(['POST', 'GET']);
+    expect([...new URLSearchParams(payload).keys()]).toEqual(['name', 'business', 'email', 'phone', 'message', 'needs']);
+  } finally {
+    await Promise.all([upstream, confirmation].map(server => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))));
   }
 });

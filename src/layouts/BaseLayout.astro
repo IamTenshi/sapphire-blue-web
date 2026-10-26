@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
-import Analytics from '@vercel/analytics/astro';
-import SpeedInsights from '@vercel/speed-insights/astro';
+import CookiePreferences from '../components/CookiePreferences.astro';
 import { createSiteGraph, siteIdentity } from '../data/seo';
 
 interface Props {
@@ -11,43 +10,21 @@ interface Props {
 }
 const { title = siteIdentity.title, description = siteIdentity.description, noindex: requestedNoindex = false } = Astro.props;
 const noindex = requestedNoindex || import.meta.env.VERCEL_ENV === 'preview';
-// Vercel's collection routes are not available in local dev or preview.
-const enableObservability = import.meta.env.PROD && import.meta.env.VERCEL === '1';
-const enableCustomEvents = enableObservability && import.meta.env.VERCEL_ENV === 'production' && import.meta.env.PUBLIC_ENABLE_CUSTOM_EVENTS === 'true';
+const productionTracking = import.meta.env.PROD && import.meta.env.VERCEL === '1' && import.meta.env.VERCEL_ENV === 'production';
+const enableCustomEvents = productionTracking && import.meta.env.PUBLIC_ENABLE_CUSTOM_EVENTS === 'true';
 const siteUrl = new URL('/', Astro.site).href;
 // Never let campaign parameters or a preview host become the canonical URL.
-const pageUrl = new URL(Astro.url.pathname, siteUrl).href;
+const pageUrl = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', siteUrl).href;
 const socialImage = new URL('/social-preview-v2.jpg', siteUrl).href;
 const socialTitle = title;
 const socialDescription = description;
 const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â€” sapphireblue.studio';
 ---
 <!DOCTYPE html>
-<html lang="en" data-custom-events={enableCustomEvents ? 'true' : undefined}>
+<html lang="en" data-tracking-production={productionTracking ? 'true' : 'false'} data-custom-events={enableCustomEvents ? 'true' : undefined}>
 <head>
-<!-- Facebook Pixel Code -->
-<script is:inline>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window,document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', '1053877131029984');
-  fbq('track', 'PageView');
-</script>
-<!-- End Facebook Pixel Code -->
-<!-- Google tag (gtag.js) -->
-<script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-L07HB79EBQ"></script>
-<script is:inline>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-L07HB79EBQ');
-</script>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content={description}>
@@ -82,12 +59,8 @@ const socialImageAlt = 'Your whole online presence in one place. Sapphire Blue â
 {!noindex && Astro.url.pathname === '/' && <script type="application/ld+json" set:html={JSON.stringify(createSiteGraph(siteUrl)).replace(/</g, '\\u003c')} />}
 </head>
 <body>
-  <noscript>
-    <img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=1053877131029984&amp;ev=PageView&amp;noscript=1">
-  </noscript>
   <a class="skip-link" href="#top">Skip to content</a>
-  {enableObservability && <Analytics />}
-  {enableObservability && <SpeedInsights />}
   <slot />
+  <CookiePreferences />
 </body>
 </html>

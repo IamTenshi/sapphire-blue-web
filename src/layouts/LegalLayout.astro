@@ -1,0 +1,85 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Footer from '../components/Footer.astro';
+import { business, noticeVersions } from '../data/business';
+
+interface Props {
+  title: string;
+  description: string;
+  version: string;
+}
+
+const { title, description, version } = Astro.props;
+const updatedLabel = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
+}).format(new Date(`${noticeVersions.privacy}T00:00:00Z`));
+---
+
+<BaseLayout title={`${title} | ${business.brand}`} description={description}>
+  <div class="legal-shell">
+    <header class="legal-header wrap">
+      <a href="/" aria-label={`${business.brand} home`} class="legal-brand">
+        <img src="/assets/sapphire-blue-wordmark.svg" alt="sapphire blue." width="948" height="143">
+      </a>
+      <nav aria-label="Legal navigation">
+        <a href="/privacy" aria-current={Astro.url.pathname.replace(/\/$/, '') === '/privacy' ? 'page' : undefined}>Privacy</a>
+        <a href="/sms-terms" aria-current={Astro.url.pathname.replace(/\/$/, '') === '/sms-terms' ? 'page' : undefined}>SMS terms</a>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </header>
+    <main id="top" tabindex="-1" class="legal-main">
+      <article class="legal-article">
+        <header class="notice-header">
+          <span class="eyebrow">Business information</span>
+          <h1>{title}</h1>
+          <p class="notice-description">{description}</p>
+          <p class="notice-meta">Updated <time datetime={noticeVersions.privacy}>{updatedLabel}</time> · Version {version}</p>
+        </header>
+        <div class="legal-content"><slot /></div>
+      </article>
+    </main>
+    <Footer />
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-shell {
+    min-height: 100vh;
+    background: radial-gradient(rgba(11, 27, 58, .08) 1px, transparent 1.4px) 0 0 / 22px 22px, #F5F7FB;
+  }
+  .legal-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+  .legal-brand { display: inline-flex; }
+  .legal-brand img { display: block; width: 208px; max-width: 100%; height: auto; }
+  .legal-header nav { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+  .legal-header nav a { color: #0B1B3A; font-size: 15px; font-weight: 700; text-decoration: none; }
+  .legal-header nav a:hover, .legal-header nav a[aria-current="page"] { color: #155DFC; text-decoration: underline; text-underline-offset: 5px; }
+  .legal-main { max-width: 1000px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 40px) 80px; }
+  .legal-article { padding: clamp(24px, 5vw, 64px); background: #fff; border: 1px solid rgba(11, 27, 58, .08); border-radius: 28px; }
+  .notice-header { padding-bottom: 28px; border-bottom: 1px solid rgba(11, 27, 58, .12); }
+  h1 { margin: 24px 0 20px; font-size: clamp(36px, 5.5vw, 60px); line-height: 1.08; text-wrap: balance; }
+  .notice-description { color: #3D4A68; font-size: 18px; line-height: 1.6; margin: 0 0 20px; }
+  .notice-meta { color: #4A5675; font-size: 13px; line-height: 1.7; margin: 0; overflow-wrap: anywhere; }
+  .legal-content { color: #3D4A68; font-size: 16px; line-height: 1.75; overflow-wrap: anywhere; }
+  .legal-content :global(h2) { color: #0B1B3A; font-size: clamp(23px, 3vw, 28px); line-height: 1.3; margin: 40px 0 16px; text-wrap: balance; }
+  .legal-content :global(h3) { color: #0B1B3A; font-size: 19px; line-height: 1.4; margin: 24px 0 12px; }
+  .legal-content :global(p) { margin: 16px 0; }
+  .legal-content :global(ul), .legal-content :global(ol) { padding-left: 24px; }
+  .legal-content :global(li) { margin: 10px 0; }
+  .legal-content :global(a) { text-underline-offset: 3px; }
+  .legal-content :global(strong), .legal-content :global(dt) { color: #0B1B3A; font-weight: 800; }
+  .legal-content :global(code) { font-size: .9em; }
+  .legal-content :global(.notice) { margin: 24px 0; padding: 16px 20px; border-left: 4px solid #155DFC; border-radius: 0 14px 14px 0; background: #F5F7FB; }
+  .legal-content :global(.details-list) { margin: 20px 0; }
+  .legal-content :global(.details-list > div) { padding: 18px 0; border-bottom: 1px solid rgba(11, 27, 58, .1); }
+  .legal-content :global(.details-list dt) { line-height: 1.5; }
+  .legal-content :global(.details-list dd) { margin: 8px 0 0; }
+  .legal-content :global(.status) { display: block; color: #155DFC; font-size: 14px; font-weight: 700; }
+</style>

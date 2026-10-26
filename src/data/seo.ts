@@ -1,15 +1,16 @@
 import { EMAIL, SOCIAL } from './pricing';
 import { faqEntries } from './faq';
+import { business } from './business';
 
 // Add only real, indexable HTML pages here, not fragments or discovery files.
-export const indexablePaths = ['/'] as const;
+export const indexablePaths = ['/', '/privacy', '/sms-terms'] as const;
 
 export const siteIdentity = {
   name: 'sapphire blue.',
   alternateNames: ['Sapphire Blue', 'Sapphire Blue Studio', 'sapphireblue.studio'],
   title: 'Sapphire Blue Studio | Small Business Marketing',
   description: 'Sapphire Blue Studio provides websites, social media management and email marketing for US small businesses. Monthly marketing plans with tools included.',
-  email: 'hello@sapphireblue.studio',
+  email: business.email,
   profiles: [
     'https://www.facebook.com/sapphireblue.studio/',
     'https://www.instagram.com/sapphireblue.studio/',
