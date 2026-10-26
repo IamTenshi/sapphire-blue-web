@@ -1,17 +1,31 @@
+---
+import { business } from '../data/business';
+
+const home = Astro.url.pathname === '/' ? '' : '/';
+---
 <footer style="background:#fff" class="[border-top:1px_solid_rgba(11,27,58,.08)]">
   <div class="wrap [padding-top:48px] [padding-bottom:32px] [display:flex] [flex-direction:column] [gap:36px]">
     <div class="[display:flex] [flex-wrap:wrap] [justify-content:space-between] [align-items:center] [gap:24px]">
-      <a href="#top" aria-label="sapphire blue. home" class="[display:flex] [align-items:center]"><img src="/assets/sapphire-blue-wordmark.svg" alt="sapphire blue." width="948" height="143" loading="lazy" class="[height:28px] [width:auto] [aspect-ratio:948/143] [display:block]"></a>
+      <a href={`${home}#top`} aria-label={`${business.brand} home`} class="[display:flex] [align-items:center]"><img src="/assets/sapphire-blue-wordmark.svg" alt={business.brand} width="948" height="143" loading="lazy" class="[height:28px] [width:auto] [aspect-ratio:948/143] [display:block]"></a>
       <nav aria-label="Footer" class="[display:flex] [flex-wrap:wrap] [gap:12px_28px]">
-        <a href="#services" class="navlink">Services</a><a href="#websites" class="navlink">Websites</a><a href="#plans" class="navlink">Plans</a><a href="#faq" class="navlink">FAQ</a><a href="#contact" class="navlink">Contact</a>
+        <a href={`${home}#services`} class="navlink">Services</a><a href={`${home}#websites`} class="navlink">Websites</a><a href={`${home}#plans`} class="navlink">Plans</a><a href={`${home}#faq`} class="navlink">FAQ</a><a href={`${home}#contact`} class="navlink">Contact</a>
       </nav>
     </div>
     <div class="[display:flex] [flex-wrap:wrap] [justify-content:space-between] [align-items:center] [gap:16px] [padding-top:24px] [border-top:1px_solid_rgba(11,27,58,.08)]">
-      <span class="[font-size:14px] [color:#4A5675]">© 2026 sapphire blue. Websites, social media and email marketing for small businesses.</span>
+      <span class="[font-size:14px] [color:#4A5675]">© 2026 {business.brand} Websites, social media and email marketing for small businesses.</span>
       <div class="[display:flex] [gap:10px]">
-        <a href="https://www.facebook.com/sapphireblue.studio/" target="_blank" rel="noopener" aria-label="sapphire blue on Facebook" class="soc"><img src="/assets/facebook-icon.svg" alt="" width="24" height="24" loading="lazy" class="[display:block]"></a>
-        <a href="https://www.instagram.com/sapphireblue.studio/" target="_blank" rel="noopener" aria-label="sapphire blue on Instagram" class="soc"><img src="/assets/instagram-icon.svg" alt="" width="24" height="24" loading="lazy" class="[display:block]"></a>
+        <a href="https://www.facebook.com/sapphireblue.studio/" target="_blank" rel="noopener" aria-label={`${business.brand} on Facebook`} class="soc"><img src="/assets/facebook-icon.svg" alt="" width="24" height="24" loading="lazy" class="[display:block]"></a>
+        <a href="https://www.instagram.com/sapphireblue.studio/" target="_blank" rel="noopener" aria-label={`${business.brand} on Instagram`} class="soc"><img src="/assets/instagram-icon.svg" alt="" width="24" height="24" loading="lazy" class="[display:block]"></a>
       </div>
     </div>
+    <nav aria-label="Privacy" class="[display:flex] [flex-wrap:wrap] [align-items:center] [gap:12px_24px] [font-size:14px]">
+      <a href="/privacy" class="navlink">Privacy &amp; Cookies</a>
+      <a href="/sms-terms" class="navlink">SMS Terms</a>
+      <button type="button" data-cookie-settings class="navlink [border:0] [padding:0] [background:transparent] [font:inherit] [cursor:pointer]">Cookie settings</button>
+    </nav>
+    <noscript>
+      <style is:inline>footer [data-cookie-settings]{display:none!important}</style>
+      <p class="[margin:0] [font-size:13px] [color:#4A5675]">Cookie settings require JavaScript. Optional tracking stays off.</p>
+    </noscript>
   </div>
 </footer>
