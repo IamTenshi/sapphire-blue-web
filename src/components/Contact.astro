@@ -19,7 +19,7 @@ const available = contactPermissionAvailability(marketingAvailability);
           <label class="field"><span>Your name <span class="req">*</span></span><input required name="name" placeholder="John Doe" autocomplete="name"></label>
           <label class="field">Business name<input name="business" placeholder="Smith Plumbing" autocomplete="organization"></label>
           <label class="field"><span>Email <span class="req">*</span></span><input required type="email" name="email" placeholder="you@gmail.com" autocomplete="email"></label>
-          <label class="field">Phone<input type="tel" name="phone" placeholder="Optional" autocomplete="tel" aria-describedby="phone-hint permissionError"></label>
+          <label class="field">Phone<input type="tel" name="phone" placeholder="Optional" autocomplete="tel" aria-describedby={available.sms ? 'phone-hint permissionError' : 'permissionError'}></label>
         </div>
         <div id="needs" role="group" aria-labelledby="needs-label" aria-describedby="needError" class="[display:flex] [flex-direction:column] [gap:10px]">
           <span id="needs-label" class="[font-weight:700] [font-size:14px]">What do you need? <span class="req">*</span></span>
@@ -32,15 +32,17 @@ const available = contactPermissionAvailability(marketingAvailability);
           <span id="needError" role="alert" hidden class="[font-size:13px] [font-weight:700] [color:#B0126B]">Pick at least one so we know where to start.</span>
         </div>
         <label class="field">Tell us a bit about your business<textarea name="message" rows="5" placeholder="What you do, where you work, what you'd like help with."></textarea></label>
-        <p id="contact-privacy-notice" class="permission-copy">{business.brand} uses these details to respond to your inquiry. See our <a href="/privacy">Privacy &amp; Cookies notice</a>. Sending a request does not sign you up for marketing. No marketing permission or optional cookies are required to send an inquiry.</p>
-        <fieldset class="marketing-permissions">
+        <p id="contact-privacy-notice" class="permission-copy">We’ll use your details to reply to your request. <a href="/privacy">Privacy &amp; Cookies</a></p>
+        <!-- Keep disabled controls for defensive validation, but do not offer a
+             subscription UI until each channel's delivery has been verified. -->
+        <fieldset class="marketing-permissions" hidden={!available.email && !available.sms}>
           <legend>Optional marketing permissions</legend>
-          <div class="marketing-permission">
-            <label><input type="checkbox" name="email_marketing" value="yes" disabled={!available.email} aria-describedby="email-marketing-status permissionError"><span>Email me the {business.brand} newsletter every two weeks and commercial offers. I can unsubscribe at any time.</span></label>
+          <div class="marketing-permission" hidden={!available.email}>
+            <label><input type="checkbox" name="email_marketing" value="yes" disabled={!available.email} aria-describedby="email-marketing-status permissionError"><span>Email newsletter and offers</span></label>
             <p id="email-marketing-status" class="permission-copy">{available.email ? 'Optional. This choice is separate from SMS marketing and your inquiry.' : 'Unavailable: we have not verified email consent storage and unsubscribe handling. You can still send your inquiry without subscribing.'}</p>
           </div>
-          <div class="marketing-permission">
-            <label><input type="checkbox" name="sms_marketing" value="yes" disabled={!available.sms} aria-describedby="sms-marketing-status phone-hint sms-marketing-terms permissionError"><span>Send me automated marketing SMS from {business.brand} via Brevo. Consent is optional and is not a condition of purchase.</span></label>
+          <div class="marketing-permission" hidden={!available.sms}>
+            <label><input type="checkbox" name="sms_marketing" value="yes" disabled={!available.sms} aria-describedby="sms-marketing-status phone-hint sms-marketing-terms permissionError"><span>Automated marketing texts</span></label>
             <p id="sms-marketing-terms" class="permission-copy">Planned program: message frequency would vary and message and data rates may apply. STOP opt-out and HELP instructions must be configured before launch; no program number is available now. SMS only, not calls or WhatsApp. Brevo is the proposed delivery provider, not a separate marketing permission. See <a href="/sms-terms">SMS Terms</a> and our <a href="/privacy">Privacy &amp; Cookies notice</a>.</p>
             <p id="phone-hint" class="permission-copy">Phone is optional for inquiries. SMS, when available, requires an international number such as +14155552671.</p>
             <p id="sms-marketing-status" class="permission-copy">{available.sms ? 'Optional. This choice is separate from email marketing and your inquiry.' : 'Unavailable: we have not verified SMS consent storage and Brevo sending and opt-out setup. You can still send your inquiry without subscribing.'}</p>
@@ -55,7 +57,6 @@ const available = contactPermissionAvailability(marketingAvailability);
         <span style="background:#00D3F2" class="[width:64px] [height:64px] [border-radius:18px] [display:grid] [place-items:center] [transform:rotate(-4deg)]"><span style="background:#0B1B3A" class="[width:18px] [height:18px] [border-radius:3px] [transform:rotate(45deg)]"></span></span>
         <h3 id="sent-heading" tabindex="-1" class="[margin:0] [font-weight:800] [font-size:36px] [line-height:1] [letter-spacing:-0.02em]">Request submitted.</h3>
         <p class="[margin:0] [font-size:17px] [line-height:1.4] [color:#3D4A68] [max-width:380px]">Your request has been received. If you don’t hear from us within 24 hours, <a href={`mailto:${business.email}`}>email us directly</a>.</p>
-        <p class="permission-copy">This confirms your inquiry only. No email or SMS marketing subscription has been created.</p>
         <button type="button" id="again" style="background:#fff" class="[height:44px] [padding:0_18px] [border-radius:12px] [border:1.5px_solid_rgba(11,27,58,.14)] [font-weight:700] [font-size:15px] [cursor:pointer] [color:#0B1B3A]">Send another</button>
       </div>
     </div>
@@ -63,6 +64,7 @@ const available = contactPermissionAvailability(marketingAvailability);
 </section>
 
 <style>
+  .marketing-permissions[hidden], .marketing-permission[hidden]{display:none}
   .marketing-permissions{margin:0;padding:18px;border:1px solid rgba(11,27,58,.14);border-radius:12px;min-width:0}
   .marketing-permissions legend{padding:0 6px;font-size:14px;font-weight:700}
   .marketing-permission + .marketing-permission{margin-top:18px;padding-top:18px;border-top:1px solid rgba(11,27,58,.1)}

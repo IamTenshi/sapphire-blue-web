@@ -22,7 +22,7 @@ Se recomienda **una PR atómica** de la rama integrada: publicar legales sin sus
 - Gestor accesible con aceptar/rechazar/configurar, versión 2, 180 días, dos categorías independientes, GPC y comportamiento cerrado ante error. Controles disponibles también en 404; sin JavaScript no hay seguimiento opcional.
 - La entrega inicial aislaba Google y enviaba Meta manualmente. La revisión del 26 de octubre restaura los SDK oficiales después del consentimiento y requiere una nueva elección (versión 2). Vercel sigue condicionado a contextos seguros. Ver `tracking-privacy.md`; ya no se afirma aislamiento del formulario ni ausencia de identificadores persistentes.
 - Conversiones solo después de HTTP correcto + texto `ok`, con autorización vigente por categoría y sin reproducción posterior. El formulario sigue usando exactamente sus seis campos y endpoint originales.
-- Email comercial/quincenal y SMS automatizado: **ambos desactivados**, con bloqueos distintos y explicaciones visibles. No existe confirmación ficticia de suscripción ni persistencia de permisos comerciales implementada.
+- Email comercial/quincenal y SMS automatizado: **ambos desactivados**, con bloqueos distintos. Sus controles están ocultos mientras no estén disponibles; el formulario solo muestra el aviso breve de privacidad y las páginas legales explican los programas previstos. No existe confirmación ficticia de suscripción ni persistencia de permisos comerciales implementada.
 - Eventos personalizados Vercel: ejemplo de configuración desactivado; habilitación del plan/variable externa no acreditada ni modificada. En pruebas locales se habilita únicamente la simulación para ejercer el control de categoría.
 
 ## Revisión independiente y regresiones
@@ -112,3 +112,19 @@ con **118 pruebas aprobadas**, incluido build estático nuevo y todas las compar
 visuales sin actualizar referencias. La primera ejecución no pudo iniciar Chromium
 por bibliotecas ausentes; se extrajeron tres paquetes únicamente en `/tmp/opencode`
 para ejecutar las pruebas, sin instalación global ni dependencias nuevas del proyecto.
+
+## Simplificación del formulario — 26 de octubre de 2026
+
+El aviso visible queda reducido a “We’ll use your details to reply to your request.
+Privacy & Cookies”, con enlace a `/privacy`. Los controles comerciales se ocultan
+por canal mientras no estén disponibles, pero conservan estado desmarcado,
+desactivación y validaciones ante manipulaciones. El teléfono no describe opciones
+SMS ocultas a lectores de pantalla. Se retira la explicación comercial del mensaje
+de éxito, sin añadir ninguna afirmación de suscripción. No se modifica Apps Script,
+el payload, la medición ni los programas previstos de las páginas legales.
+
+Se añaden cuatro referencias `inquiry-home-*` sin reemplazar imágenes anteriores.
+La comparación de píxeles verifica que no hay cambios por encima del aviso del
+formulario en 390, 819, 820 y 1440 px; se inspeccionaron las vistas de móvil y
+escritorio. Validación: `pnpm check` sin diagnósticos y suite completa de **118
+pruebas aprobadas**, incluidas las visuales sin actualización en la ejecución final.

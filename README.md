@@ -41,6 +41,8 @@ La migración no rediseña la página. Las propiedades arbitrarias de Tailwind c
 
 Las capturas históricas en `tests/visual.spec.ts-snapshots/` proceden del HTML anterior a la migración. El proyecto de privacidad añade intencionalmente avisos/opciones al formulario, enlaces al footer y una interfaz de preferencias; no se deben actualizar las referencias antiguas para ocultar esas diferencias. Se conserva comparación exacta de los planes y calculadora y se verifica por separado el contenido comercial no modificado. Se usa Chromium Linux, Manrope local y movimiento reducido.
 
+La simplificación posterior del formulario usa referencias `inquiry-home-*`: conserva intactas las anteriores `privacy-home-*` y verifica por separado banner, preferencias y planes. Solo se reduce el aviso y se ocultan los canales comerciales desactivados, manteniendo sus bloqueos internos.
+
 La optimización del icono de redes sociales actualizó únicamente sus píxeles en las cuatro referencias de página completa, tras verificar que no había diferencias fuera de su rectángulo de 110 × 96 px. Se conservan sus dimensiones y la composición original.
 
 Antes de ejecutar pruebas por primera vez:
@@ -95,7 +97,7 @@ Por defecto, `document` emite `sapphire:marketing` con `{ name, properties }`, s
 
 ### Permisos comerciales y publicación
 
-Email quincenal/comercial y SMS automatizados vía Brevo son programas previstos, **desactivados por separado**. Las casillas son opcionales, desmarcadas y bloqueadas con una explicación visible. No se transmite una autorización que el flujo actual no garantiza guardar. Un `ok` confirma la consulta según el contrato existente, no una suscripción.
+Email quincenal/comercial y SMS automatizados vía Brevo son programas previstos, **desactivados por separado**. Sus controles siguen desmarcados y bloqueados internamente, pero no se muestran mientras cada canal esté desactivado. El formulario presenta únicamente un aviso breve con enlace a Privacidad y Cookies; los programas previstos se explican en las páginas legales. No se transmite una autorización que el flujo actual no garantiza guardar. Un `ok` confirma la consulta según el contrato existente, no una suscripción.
 
 No se ha modificado Apps Script, su endpoint ni los seis campos del POST. El contrato futuro preparado, las pruebas de persistencia y los requisitos para habilitar cada canal están en [`docs/contact-permissions.md`](docs/contact-permissions.md). La información del negocio y los límites operativos se documentan en [`docs/business-privacy.md`](docs/business-privacy.md).
 

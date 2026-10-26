@@ -26,25 +26,29 @@ async function fillInquiry(page: Page) {
   await page.locator('[name="message"]').fill('This message is not marketing consent.');
 }
 
-test('email and SMS permissions are separate, unchecked, optional and honestly unavailable', async ({ page }) => {
+test('inactive subscriptions are hidden while separate defensive controls remain disabled', async ({ page }) => {
   await page.goto('/');
   for (const name of ['email_marketing', 'sms_marketing']) {
     const checkbox = page.locator(`[name="${name}"]`);
     await expect(checkbox).not.toBeChecked();
     await expect(checkbox).toBeDisabled();
+    await expect(checkbox).toBeHidden();
     await expect(checkbox).not.toHaveAttribute('required');
     expect(await checkbox.getAttribute('checked')).toBeNull();
   }
   await expect(page.locator('#email-marketing-status')).toContainText('not verified email consent storage');
   await expect(page.locator('#sms-marketing-status')).toContainText('not verified SMS consent storage');
-  await expect(page.locator('.marketing-permissions')).toContainText('every two weeks and commercial offers');
-  await expect(page.locator('.marketing-permissions')).toContainText('automated marketing SMS');
-  await expect(page.locator('.marketing-permissions')).toContainText('via Brevo');
+  await expect(page.locator('.marketing-permissions')).toBeHidden();
+  await expect(page.locator('#form').getByRole('checkbox')).toHaveCount(0);
+  await expect(page.locator('#email-marketing-status')).toBeHidden();
+  await expect(page.locator('#sms-marketing-status')).toBeHidden();
   await expect(page.locator('#sms-marketing-terms')).toContainText('STOP');
   await expect(page.locator('#sms-marketing-terms')).toContainText('HELP');
   await expect(page.locator('#contact-privacy-notice a')).toHaveAttribute('href', '/privacy');
-  await expect(page.locator('#sms-marketing-terms a[href="/sms-terms"]')).toBeVisible();
-  await expect(page.locator('#contact-privacy-notice')).toContainText('No marketing permission or optional cookies are required');
+  await expect(page.locator('#sms-marketing-terms a[href="/sms-terms"]')).toBeHidden();
+  await expect(page.locator('#contact-privacy-notice')).toHaveText('We’ll use your details to reply to your request. Privacy & Cookies');
+  await expect(page.locator('#contact-privacy-notice a')).toHaveText('Privacy & Cookies');
+  await expect(page.locator('[name="phone"]')).toHaveAttribute('aria-describedby', 'permissionError');
   await expect(page.locator('[name="phone"]')).not.toHaveAttribute('required');
   await expect(page.locator('[name="phone"]')).not.toHaveAttribute('pattern');
   await expect(page.locator('#form input[type="checkbox"]')).toHaveCount(2);
@@ -77,7 +81,7 @@ for (const phone of ['', '555-0123']) {
       ['message', 'This message is not marketing consent.'],
       ['needs', 'Website'],
     ]);
-    await expect(page.locator('#sent')).toContainText('This confirms your inquiry only. No email or SMS marketing subscription has been created.');
+    await expect(page.locator('#sent')).toContainText('Your request has been received.');
     await expect(page.locator('#sent')).not.toContainText(/you(?:’|')re subscribed|successfully subscribed|subscription confirmed/i);
     await page.locator('#again').click();
     for (const name of ['email_marketing', 'sms_marketing']) {

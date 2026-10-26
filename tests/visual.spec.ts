@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures';
 
-// Historic original-*.png files are preserved. The privacy-* references make
-// the intentional contact/footer changes explicit, not silently overwrite them.
+// Historic original-* and privacy-* files are preserved. The inquiry-* references
+// record the intentionally shorter form without replacing previous baselines.
 for (const width of [390, 819, 820, 1440]) {
   test(`privacy additions preserve the surrounding design at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -14,7 +14,7 @@ for (const width of [390, 819, 820, 1440]) {
     })));
     expect(await page.evaluate(() => document.fonts.check('800 48px Manrope'))).toBe(true);
     await expect(page.locator('#total')).toHaveText('$1,942.20');
-    await expect(page).toHaveScreenshot(`privacy-home-${width}.png`, {
+    await expect(page).toHaveScreenshot(`inquiry-home-${width}.png`, {
       fullPage: true,
       animations: 'disabled',
       threshold: 0,
