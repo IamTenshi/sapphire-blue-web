@@ -1,0 +1,145 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import {
+  business,
+  marketingAvailability,
+  marketingPrograms,
+  noticeVersions,
+  providers,
+  retentionPolicy,
+  trackingPreferences,
+} from '../data/business';
+---
+
+<LegalLayout
+  title="Privacy notice"
+  description="How Sapphire Blue handles business inquiries, website information and optional tracking, and what is planned for email and SMS."
+  version={noticeVersions.privacy}
+>
+  <h2>Who is responsible</h2>
+  <p>
+    {business.brand} is operated by {business.operator}, {business.operatorDescription}.
+    For privacy questions or requests, email <a href={`mailto:${business.email}`}>{business.email}</a> and address your request to Asor.
+    This site is intended for {business.initialAudience}.
+  </p>
+  <p>
+    On {business.brand}'s side, access to inquiry and client information is limited to {business.authorizedAccess.people} authorized people,
+    located in the {business.authorizedAccess.countries[0]} and the {business.authorizedAccess.countries[1]}.
+    The service providers below also process information as part of their services.
+  </p>
+
+  <h2>Information and purposes</h2>
+  <ul>
+    <li><strong>Inquiries:</strong> your name, email address, optional phone number, business name, selected services and anything you choose to include in your message. We use these details to respond, discuss a potential engagement and manage the resulting business relationship.</li>
+    <li><strong>Direct correspondence and client records:</strong> information you provide by email or during an engagement, used for the correspondence, agreed services and relevant business records.</li>
+    <li><strong>Website delivery:</strong> technical connection and request information processed by the hosting provider to serve the site.</li>
+    <li><strong>Browser preferences:</strong> your choices about optional analytics and advertising tools, stored locally as explained below.</li>
+    <li><strong>Optional measurement:</strong> page, interaction, technical and performance information processed by the tools you allow. These tools are separate from submitting an inquiry.</li>
+  </ul>
+  <p>
+    Please do not put passwords, payment-card details, sensitive personal information or information about children in the inquiry form.
+    The site is not directed to children. Providing an email address or phone number for a business inquiry does not enroll you in marketing.
+  </p>
+
+  <h2>Providers: active, optional and planned</h2>
+  <dl class="details-list">
+    {Object.values(providers).map(provider => (
+      <div>
+        <dt>{provider.name}</dt>
+        <dd class="status">{provider.status}</dd>
+        <dd>{provider.purpose}</dd>
+        <dd><strong>Information involved:</strong> {provider.information}</dd>
+      </div>
+    ))}
+  </dl>
+  <p>
+    The contact flow sends requests to Google Apps Script for handling in Google Sheets and email notification through MailApp.
+    Brevo is not part of the current contact flow. It is a proposed provider, not an active email or SMS integration.
+  </p>
+
+  <h2>Optional analytics, advertising and local storage</h2>
+  <p>
+    Use <strong>Privacy settings</strong> in the footer to allow or reject analytics and advertising separately, or to change your choices later.
+    Optional tools remain off until the relevant permission is given. Rejecting them does not prevent you from reading the site or making an inquiry.
+    These optional tools are not enabled when JavaScript is off, in local development or on preview deployments.
+  </p>
+  <ul>
+    <li><strong>Analytics:</strong> Google Analytics, Vercel Web Analytics and Vercel Speed Insights.</li>
+    <li><strong>Advertising:</strong> Meta Pixel for advertising measurement.</li>
+    <li><strong>Global Privacy Control (GPC):</strong> a detected GPC signal is treated as an objection to advertising tracking. It does not automatically reject analytics, which has its own separate choice.</li>
+  </ul>
+  <p>
+    Your browser's <code>localStorage</code> holds these preferences under <code>{trackingPreferences.key}</code>,
+    using version {trackingPreferences.version} with a {trackingPreferences.ttlDays}-day validity period.
+    The choice belongs to that browser and device. Clearing local storage removes the saved choice; without a valid choice, optional tools stay off unless you allow them.
+    This local preference is not a central, verifiable record of email or SMS marketing permission.
+  </p>
+  <p>
+    Changing a preference stops future optional collection by the affected tools on this site; it does not undo information already sent to a provider.
+    Measurement may also be suppressed for safety, including on URLs that could expose personal or sensitive information.
+    Not every visit or interaction is necessarily measured.
+  </p>
+
+  <h2>Email and SMS marketing are not active</h2>
+  <div class="notice">
+    <p><strong>Current availability:</strong> marketing email is {marketingAvailability.email ? 'enabled' : 'disabled'}; automated marketing SMS is {marketingAvailability.sms ? 'enabled' : 'disabled'}.</p>
+    <p>A verifiable marketing-permission register has not been implemented. Neither planned program is accepting subscriptions through this site.</p>
+  </div>
+  <ul>
+    <li><strong>Planned email:</strong> {marketingPrograms.email.purpose} Intended frequency: {marketingPrograms.email.frequency.toLowerCase()}</li>
+    <li><strong>Planned SMS:</strong> {marketingPrograms.sms.purpose} {marketingPrograms.sms.frequency} {marketingPrograms.sms.charges}</li>
+  </ul>
+  <p>
+    Both would use {providers.marketing.name} only after setup and verification. Each channel would require its own optional choice;
+    neither would be required to send an inquiry, receive a quote or purchase services.
+    A business reply to your request is different from a marketing subscription.
+    See the <a href="/sms-terms">planned SMS terms</a> for program limitations and the intended opt-out process.
+  </p>
+
+  <h2>Intended retention</h2>
+  <p>These are the intended retention targets for records held by {business.brand}:</p>
+  <dl class="details-list">
+    {Object.values(retentionPolicy).map(item => (
+      <div><dt>{item.record}</dt><dd>{item.period}</dd></div>
+    ))}
+  </dl>
+  <p>
+    These targets are not a promise of automatic deletion: a deletion schedule has not been implemented.
+    Manual review is needed to apply them. Specific record-preservation obligations, disputes, backups and provider-held copies may affect what can be deleted and when.
+    Minimal permission or opt-out records would be kept separately from marketing contact lists so an opt-out can continue to be honored.
+  </p>
+
+  <h2>Access across countries and provider handling</h2>
+  <p>
+    Information may be accessed from the Dominican Republic and the United States by the two authorized people described above.
+    Service providers may process information in other countries, depending on their services and configuration.
+    This notice does not assert a particular cross-border transfer mechanism, certification, provider-account setting or guaranteed processing location.
+  </p>
+  <p>
+    Information may also need to be disclosed in response to an applicable legal obligation or a specific legal claim.
+    No online transmission or storage system is risk-free.
+  </p>
+
+  <h2>Your choices and privacy requests</h2>
+  <p>
+    Depending on your location and the rules that apply, you may have rights to request access, correction or deletion,
+    obtain a copy of information, object to or restrict certain uses, withdraw optional permission, or contact a relevant privacy authority.
+    Those rights and any exceptions depend on the applicable rules; this notice does not promise a universal set of rights.
+  </p>
+  <p>
+    Email <a href={`mailto:${business.email}`}>{business.email}</a> with your request and enough context to identify the relevant correspondence or records.
+    {business.operator} handles requests manually and may ask for information reasonably needed to verify the request.
+    Do not send sensitive identity documents unless specifically requested through an appropriate process.
+    No fixed response time is stated here; applicable response requirements still apply where relevant.
+  </p>
+  <p>
+    For browser tracking, use the footer's Privacy settings. For an objection to advertising, you can also use a supported GPC signal.
+    For questions about the planned marketing programs or information already provided, contact Asor by email rather than relying on an unconfigured SMS command or unsubscribe workflow.
+  </p>
+
+  <h2>Changes to this notice</h2>
+  <p>
+    This notice may be updated when practices or available features change. The date and version above identify this edition.
+    Publishing a new notice does not itself enroll you in marketing or replace a separate optional permission.
+  </p>
+</LegalLayout>
