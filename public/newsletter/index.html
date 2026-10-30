@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Newsletter | sapphire blue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* Base: no dependemos de la hoja de Brevo para que nada se vea roto */
+  .sb-form,
+  .sb-form *,
+  .sb-form *::before,
+  .sb-form *::after {
+    box-sizing: border-box;
+  }
+
+  .sb-form,
+  .sb-form * {
+    font-family: 'Manrope', Helvetica, Arial, sans-serif;
+  }
+
+  /* Fondo con dots, formulario centrado en el centro y en el medio.
+     Si lo pegas dentro de una sección con su propia altura, cambia min-height a auto */
+  .sb-form.sib-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 48px 16px;
+    background-color: #F5F7FB;
+    background-image: radial-gradient(circle, #CBD5E8 1.5px, transparent 1.6px);
+    background-size: 28px 28px;
+    background-attachment: scroll;
+    text-align: left;
+  }
+
+  .sb-form .sib-form-container {
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  .sb-form #sib-container {
+    display: block;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 24px;
+    background-color: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(11, 27, 58, 0.04), 0 16px 48px rgba(11, 27, 58, 0.07);
+  }
+
+  .sb-form #sib-form {
+    text-align: left;
+  }
+
+  .sb-form .sib-form-block {
+    padding: 0;
+    word-wrap: break-word;
+  }
+
+  /* Gema Spark Magenta */
+  .sb-form .sb-gem {
+    width: 20px;
+    height: 20px;
+    margin: 8px 0 6px 5px;
+    background-color: #F6339A;
+    transform: rotate(45deg);
+  }
+
+  /* Título y descripción */
+  .sb-form #sib-container .sb-title p {
+    margin: 0;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: #0B1B3A;
+  }
+
+  .sb-form #sib-container .sb-desc p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.55;
+    color: #4A5775;
+  }
+
+  /* Etiquetas */
+  .sb-form #sib-container .form__label-row {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .sb-form #sib-container .entry__label {
+    display: block;
+    width: 100%;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0B1B3A;
+  }
+
+  .sb-form #sib-container .entry__label::after {
+    content: attr(data-required);
+    margin-left: 3px;
+    color: #155DFC;
+  }
+
+  /* Campos a todo el ancho: la caja visible es .entry__field */
+  .sb-form #sib-container .entry__field {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    margin: 8px 0 0;
+    background: #F5F7FB;
+    border: 1.5px solid #D5DCEB;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+
+  .sb-form #sib-container .entry__field:focus-within {
+    background: #FFFFFF;
+    border-color: #155DFC;
+    box-shadow: 0 0 0 4px rgba(21, 93, 252, 0.14);
+  }
+
+  .sb-form #sib-container input.input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    height: 53px;
+    margin: 0;
+    padding: 0 20px;
+    font-size: 16px;
+    color: #0B1B3A;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    outline: none;
+  }
+
+  .sb-form #sib-container input.input::placeholder {
+    font-family: 'Manrope', Helvetica, Arial, sans-serif;
+    text-align: left;
+    color: #8A96AE;
+    opacity: 1;
+  }
+
+  /* Errores de cada campo */
+  .sb-form #sib-container .entry__error {
+    display: block;
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid #ff4949;
+    border-radius: 10px;
+  }
+
+  .sb-form #sib-container .entry__error:empty {
+    display: none;
+  }
+
+  /* Casilla de consentimiento: caja a la izquierda, texto a la derecha */
+  .sb-form #sib-container .entry__choice {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    text-indent: 0;
+  }
+
+  .sb-form #sib-container .entry__choice label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .sb-form #sib-container .input_replaced {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  .sb-form #sib-container .checkbox {
+    position: relative;
+    display: block;
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    margin: 1px 0 0;
+    background: #F5F7FB;
+    border: 1.5px solid #D5DCEB;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+
+  .sb-form #sib-container .checkbox_tick_positive::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    width: 6px;
+    height: 11px;
+    margin: 0;
+    border: solid #F5F7FB;
+    border-width: 0 2.5px 2.5px 0;
+    transform: translate(-50%, -60%) rotate(45deg);
+    transform-origin: center;
+    display: none;
+  }
+
+  .sb-form #sib-container .input_replaced:checked + .checkbox {
+    background-color: #155DFC;
+    border-color: #155DFC;
+  }
+
+  .sb-form #sib-container .input_replaced:checked + .checkbox_tick_positive::before {
+    display: block;
+  }
+
+  .sb-form #sib-container .input_replaced:focus-visible + .checkbox {
+    box-shadow: 0 0 0 4px rgba(21, 93, 252, 0.14);
+  }
+
+  .sb-form #sib-container .sb-consent {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .sb-form #sib-container .sb-consent p {
+    display: inline;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #4A5775;
+  }
+
+  .sb-form #sib-container .entry__label_optin {
+    display: inline;
+    width: auto;
+    font-size: 13px;
+  }
+
+  .sb-form #sib-container a {
+    color: #155DFC;
+    text-decoration: underline;
+  }
+
+  /* Botón */
+  .sb-form #sib-container .sib-form-block__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    height: 56px;
+    min-height: 56px;
+    padding: 0 24px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #F5F7FB;
+    background-color: #155DFC;
+    border: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background-color .15s ease;
+  }
+
+  .sb-form #sib-container .sib-form-block__button:hover {
+    background-color: #0E4BD9;
+  }
+
+  .sb-form #sib-container .sib-form-block__button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(21, 93, 252, 0.3);
+  }
+
+  .sb-form #sib-container .sib-form-block__button-disabled {
+    opacity: .6;
+  }
+
+  /* El ícono de carga solo se ve mientras se envía */
+  .sb-form #sib-container .sib-form-block__button .progress-indicator__icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin: 0;
+    fill: #F5F7FB;
+    animation: sb-spin .8s linear infinite;
+  }
+
+  .sb-form #sib-container .sib-hide-loader-icon {
+    display: none !important;
+  }
+
+  @keyframes sb-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Campo trampa anti-bots de Brevo: siempre oculto */
+  .sb-form .input--hidden {
+    display: none !important;
+  }
+
+  /* Mensajes de éxito y error */
+  .sb-form .sib-form-message-panel {
+    display: none;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    font-size: 15px;
+    line-height: 1.45;
+    border: 1px solid;
+    border-radius: 16px;
+  }
+
+  .sb-form .sib-form-message-panel--active {
+    display: block;
+  }
+
+  .sb-form .sib-form-message-panel__text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 4px;
+  }
+
+  .sb-form .sib-form-message-panel .sib-notification__icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  @media (max-width: 480px) {
+    .sb-form.sib-form { padding: 24px 12px; }
+    .sb-form #sib-container { padding: 24px 18px; }
+    .sb-form #sib-container .sb-title p { font-size: 30px; }
+  }
+</style>
+<link rel="stylesheet" href="https://sibforms.com/forms/end-form/build/sib-styles.css">
+</head>
+<body style="margin:0;">
+<div class="sib-form sb-form">
+  <div id="sib-form-container" class="sib-form-container">
+
+    <div id="error-message" class="sib-form-message-panel" style="color:#661d1d; background-color:#ffeded; border-color:#ff4949;">
+      <div class="sib-form-message-panel__text sib-form-message-panel__text--center">
+        <svg viewBox="0 0 512 512" class="sib-icon sib-notification__icon">
+          <path d="M256 40c118.621 0 216 96.075 216 216 0 119.291-96.61 216-216 216-119.244 0-216-96.562-216-216 0-119.203 96.602-216 216-216m0-32C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm-11.49 120h22.979c6.823 0 12.274 5.682 11.99 12.5l-7 168c-.268 6.428-5.556 11.5-11.99 11.5h-8.979c-6.433 0-11.722-5.073-11.99-11.5l-7-168c-.283-6.818 5.167-12.5 11.99-12.5zM256 340c-15.464 0-28 12.536-28 28s12.536 28 28 28 28-12.536 28-28-12.536-28-28-28z" />
+        </svg>
+        <span class="sib-form-message-panel__inner-text">Something went wrong. Try again in a moment.</span>
+      </div>
+    </div>
+    <div></div>
+
+    <div id="success-message" class="sib-form-message-panel" style="color:#0B1B3A; background-color:#E8F0FF; border-color:#155DFC;">
+      <div class="sib-form-message-panel__text sib-form-message-panel__text--center">
+        <svg viewBox="0 0 512 512" class="sib-icon sib-notification__icon">
+          <path d="M256 8C119.033 8 8 119.033 8 256s111.033 248 248 248 248-111.033 248-248S392.967 8 256 8zm0 464c-118.664 0-216-96.055-216-216 0-118.663 96.055-216 216-216 118.664 0 216 96.055 216 216 0 118.663-96.055 216-216 216zm141.63-274.961L217.15 376.071c-4.705 4.667-12.303 4.637-16.97-.068l-85.878-86.572c-4.667-4.705-4.637-12.303.068-16.97l8.52-8.451c4.705-4.667 12.303-4.637 16.97.068l68.976 69.533 163.441-162.13c4.705-4.667 12.303-4.637 16.97.068l8.451 8.52c4.668 4.705 4.637 12.303-.068 16.97z" />
+        </svg>
+        <span class="sib-form-message-panel__inner-text">Almost there. Check your inbox and confirm your email to join.</span>
+      </div>
+    </div>
+    <div></div>
+
+    <div id="sib-container" class="sib-container--large sib-container--vertical" style="max-width:540px; text-align:left; border-width:1px; border-style:solid; border-color:#E6EBF5; border-radius:28px; direction:ltr">
+      <form id="sib-form" method="POST" action="https://8a0f76ea.sibforms.com/serve/MUIFAE_RETSw9Y0AUThtrs6sgmW6O7i1FatyhvhFe-TFHNYTRsTmv7v9Ts9AXiNpxnEZLe2gdRKfxs0ZE8Yzz7sVCVyA93Wi6qhl5ZBl6mlkkjaL-bTpD_YK22H_dIEpEcuaxA9YC8z8hHl_DdzB9wk0aNBO8KjLDfNW9A73dbRXC_CD5tn3oD75pqz1erVEu4uHN743yhOfG72FYw==" data-type="subscription">
+
+        <div style="padding: 0 0 10px;">
+          <div class="sib-form-block">
+            <div class="sb-gem" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div style="padding: 10px 0;">
+          <div class="sib-form-block sb-title" style="background-color:transparent; text-align:left">
+            <p>What’s actually going on with your online presence?</p>
+          </div>
+        </div>
+
+        <div style="padding: 4px 0 18px;">
+          <div class="sib-form-block sb-desc" style="background-color:transparent; text-align:left">
+            <div class="sib-text-form-block">
+              <p>Free emails that explain how websites, social media, and email work for a business, why they matter, and what gets missed when nobody’s watching them.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 8px 0;">
+          <div class="sib-input sib-form-block">
+            <div class="form__entry entry_block">
+              <div class="form__label-row ">
+                <label class="entry__label" style="text-align:left;" for="NOMBRE" data-required="*">Your name</label>
+                <div class="entry__field">
+                  <input class="input " maxlength="200" type="text" id="NOMBRE" name="NOMBRE" autocomplete="off" placeholder="Your first name" data-required="true" required />
+                </div>
+              </div>
+              <label class="entry__error entry__error--primary" style="text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949;"></label>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 8px 0;">
+          <div class="sib-input sib-form-block">
+            <div class="form__entry entry_block">
+              <div class="form__label-row ">
+                <label class="entry__label" style="text-align:left;" for="EMAIL" data-required="*">Your email</label>
+                <div class="entry__field">
+                  <input class="input " type="text" id="EMAIL" name="EMAIL" autocomplete="off" value="" placeholder="you@yourbusiness.com" data-required="true" required />
+                </div>
+              </div>
+              <label class="entry__error entry__error--primary" style="text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949;"></label>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 10px 0;">
+          <div class="sib-optin sib-form-block" data-required="true">
+            <div class="form__entry entry_mcq">
+              <div class="form__label-row ">
+                <div class="entry__choice">
+                  <label>
+                    <input type="checkbox" class="input_replaced" value="1" id="OPT_IN" name="OPT_IN" required />
+                    <span class="checkbox checkbox_tick_positive"></span>
+                    <span class="sb-consent" style="background-color:transparent;"><p>By subscribing, you agree to receive emails from sapphire blue. You can unsubscribe at any time. <a href="https://www.sapphireblue.studio/privacy" target="_blank" rel="nofollow noopener"><u>Privacy Policy</u></a></p><span data-required="*" class="entry__label entry__label_optin"></span></span>
+                  </label>
+                </div>
+              </div>
+              <label class="entry__error entry__error--primary" style="text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949;"></label>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 14px 0 0;">
+          <div class="sib-form-block">
+            <button class="sib-form-block__button sib-form-block__button-with-loader" form="sib-form" type="submit">
+              <svg class="icon clickable__icon progress-indicator__icon sib-hide-loader-icon" viewBox="0 0 512 512">
+                <path d="M460.116 373.846l-20.823-12.022c-5.541-3.199-7.54-10.159-4.663-15.874 30.137-59.886 28.343-131.652-5.386-189.946-33.641-58.394-94.896-95.833-161.827-99.676C261.028 55.961 256 50.751 256 44.352V20.309c0-6.904 5.808-12.337 12.703-11.982 83.556 4.306 160.163 50.864 202.11 123.677 42.063 72.696 44.079 162.316 6.031 236.832-3.14 6.148-10.75 8.461-16.728 5.01z" />
+              </svg>
+              Subscribe
+            </button>
+          </div>
+        </div>
+
+        <input type="text" name="email_address_check" value="" class="input--hidden">
+        <input type="hidden" name="locale" value="en">
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.REQUIRED_CODE_ERROR_MESSAGE = 'Choose a country code';
+  window.LOCALE = 'en';
+
+  window.EMAIL_INVALID_MESSAGE = window.SMS_INVALID_MESSAGE = "That email doesn’t look right. Check it and try again.";
+
+  window.REQUIRED_ERROR_MESSAGE = "This is required to subscribe.";
+
+  window.GENERIC_INVALID_MESSAGE = "That doesn’t look right. Check it and try again.";
+
+  window.INVALID_NUMBER = "That doesn’t look right. Check it and try again.";
+
+  window.INVALID_DATE = "Enter a valid date";
+
+  window.REQUIRED_MULTISELECT_MESSAGE = 'Select at least one option';
+
+  window.translation = {
+    common: {
+      selectedList: '{quantity} list selected',
+      selectedLists: '{quantity} lists selected',
+      selectedOption: '{quantity} selected',
+      selectedOptions: '{quantity} selected',
+    }
+  };
+
+  var AUTOHIDE = Boolean(0);
+</script>
+
+<script defer src="https://sibforms.com/forms/end-form/build/main.js"></script>
+</body>
+</html>
