@@ -265,6 +265,15 @@
     text-decoration: underline;
   }
 
+  /* reCAPTCHA (obligatorio) */
+  .sb-form #sib-container .sib-captcha .form__label-row {
+    align-items: flex-start;
+  }
+
+  .sb-form #sib-container .sib-captcha .g-recaptcha {
+    max-width: 100%;
+  }
+
   /* Botón */
   .sb-form #sib-container .sib-form-block__button {
     display: flex;
@@ -355,6 +364,14 @@
     height: 22px;
     flex-shrink: 0;
     fill: currentColor;
+  }
+
+  @media (max-width: 380px) {
+    .sb-form #sib-container .sib-captcha .g-recaptcha {
+      transform: scale(0.85);
+      transform-origin: 0 0;
+      margin-bottom: -12px;
+    }
   }
 
   @media (max-width: 480px) {
@@ -457,6 +474,17 @@
           </div>
         </div>
 
+        <div style="padding: 10px 0 4px;">
+          <div class="sib-captcha sib-form-block">
+            <div class="form__entry entry_block">
+              <div class="form__label-row">
+                <div class="g-recaptcha sib-visible-recaptcha" id="sib-captcha" data-sitekey="6LcF8A4uAAAAAAJAK5sdrHoJ5Qewkx_BULszzRWd" data-callback="handleCaptchaResponse"></div>
+              </div>
+              <label class="entry__error entry__error--primary" style="text-align:left; color:#661d1d; background-color:#ffeded; border-color:#ff4949;"></label>
+            </div>
+          </div>
+        </div>
+
         <div style="padding: 14px 0 0;">
           <div class="sib-form-block">
             <button class="sib-form-block__button sib-form-block__button-with-loader" form="sib-form" type="submit">
@@ -500,9 +528,15 @@
     }
   };
 
+  function handleCaptchaResponse() {
+    var event = new Event('captchaChange');
+    document.getElementById('sib-captcha').dispatchEvent(event);
+  }
+
   var AUTOHIDE = Boolean(0);
 </script>
 
+<script src="https://www.google.com/recaptcha/api.js?hl=en" async defer></script>
 <script defer src="https://sibforms.com/forms/end-form/build/main.js"></script>
 </body>
 </html>
